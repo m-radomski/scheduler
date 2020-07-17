@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"io/ioutil"
 	"strconv"
@@ -72,34 +71,34 @@ func CreateSearchPage(showTimes func(times []string)) (title string, content tvi
 		SetSeparator(tview.Borders.Vertical)
 		rows := len(stops)
 
-		cell := tview.NewTableCell("Line number").SetAlign(tview.AlignCenter)
+		cell := tview.NewTableCell("Line number").SetAlign(tview.AlignCenter).SetExpansion(1)
 		table.SetCell(0, 0, cell)
-		cell = tview.NewTableCell("Direction").SetAlign(tview.AlignCenter)
+		cell = tview.NewTableCell("Direction").SetAlign(tview.AlignCenter).SetExpansion(1)
 		table.SetCell(0, 1, cell)
-		cell = tview.NewTableCell("Stop name").SetAlign(tview.AlignCenter)
+		cell = tview.NewTableCell("Stop name").SetAlign(tview.AlignCenter).SetExpansion(1)
 		table.SetCell(0, 2, cell)
 
 		for r := 0; r < rows; r++ {
 			c := 0
 			cell := tview.NewTableCell(strconv.Itoa(stops[r].LineNr)).
-			SetAlign(tview.AlignCenter)
+			SetAlign(tview.AlignCenter).SetExpansion(1)
 			table.SetCell(r+1, c, cell)
 
 			c += 1
 			cell = tview.NewTableCell(stops[r].Direction).
-			SetAlign(tview.AlignCenter)
+			SetAlign(tview.AlignCenter).SetExpansion(1)
 			table.SetCell(r+1, c, cell)
 
 			c += 1
 			cell = tview.NewTableCell(stops[r].Name).
-			SetAlign(tview.AlignCenter)
+			SetAlign(tview.AlignCenter).SetExpansion(1)
 			table.SetCell(r+1, c, cell)
 		}
 
 		table.SetBorder(true).SetTitle("Stops and their data").SetTitleAlign(tview.AlignCenter)
 		table.SetSelectedFunc(func(row, _ int) {
 			if row != 0 {
-				showTimes(stops[row - 1])
+				showTimes(stops[row - 1].Times)
 			}
 		})
 	}
