@@ -149,8 +149,9 @@ func CreateTimesPage(searchAgain func()) (title string, content tview.Primitive,
 }
 
 func main() {
-	refresh := func(times []string) {}
 	pages := tview.NewPages()
+
+	refresh := func(times []string) {}
 	dummy := func(times []string) {
 		refresh(times)
 		pages.SwitchToPage("times")
@@ -163,7 +164,7 @@ func main() {
 	name, primi, refresh := CreateTimesPage(backToSearch)
 	pages.AddPage(name, primi, true, false)
 	name, primi = CreateSearchPage(dummy)
-	pages.AddAndSwitchToPage(name, primi, true)
+	pages.AddPage(name, primi, true, true)
 
 	if err := app.SetRoot(pages, true).EnableMouse(true).Run(); err != nil {
 		panic(err)
