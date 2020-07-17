@@ -52,7 +52,7 @@ func Center(width, height int, p tview.Primitive) tview.Primitive {
 		AddItem(tview.NewBox(), 0, 1, false)
 }
 
-func CreateSearchPage(showTimes func(chosen StopTimes)) (title string, content tview.Primitive) {
+func CreateSearchPage(showTimes func(times []string)) (title string, content tview.Primitive) {
 	table := tview.NewTable()
 	input := tview.NewInputField()
 
@@ -120,9 +120,38 @@ func CreateSearchPage(showTimes func(chosen StopTimes)) (title string, content t
 	return "search", tview.NewFlex().
 		AddItem(tview.NewFlex().
 			SetDirection(tview.FlexRow).
-			AddItem(table, 0, 1, true).
-			AddItem(input, 2, 0, false),
-		0, 1, false)
+			AddItem(table, 0, 1, false).
+			AddItem(input, 2, 0, true),
+		0, 1, true)
+}
+
+func CreateTimesPage(searchAgain func()) (title string, content tview.Primitive, refresh func(times []string)) {
+	table := tview.NewTable()
+
+	refresh = func(times []string) {
+		table.Clear()
+		table.SetSelectable(true, true).SetSeparator(tview.Borders.Vertical)
+
+		headers := "Hour;Work Day;Saturday;Holiday"
+		for c, header := range strings.Split(headers, ";") {
+			cell := tview.NewTableCell(header).SetAlign(tview.AlignCenter)
+			table.SetCell(0, c, cell)
+		}
+
+		for r, time := range times {
+			for c, hms := range strings.Split(time, "; ") {
+				cell := tview.NewTableCell(hms).SetAlign(tview.AlignRight)
+				table.SetCell(r + 1, c, cell)
+			}
+		}
+
+		table.SetBorder(true).SetTitle("Departures/Arrivals").SetTitleAlign(tview.AlignCenter)
+		table.SetDoneFunc(func (key tcell.Key) {
+			searchAgain()
+		})
+	}
+
+	return "times", Center(80, 25, table), refresh
 }
 
 func main() {
@@ -133,13 +162,20 @@ func main() {
 	// 	return event
 	// })
 
-	dummy := func(chosen StopTimes) {
-		app.Stop()
-		fmt.Println("Ended on", chosen)
+	refresh := func(times []string) {}
+	pages := tview.NewPages()
+	dummy := func(times []string) {
+		refresh(times)
+		pages.SwitchToPage("times")
 	}
 
-	pages := tview.NewPages()
-	name, primi := CreateSearchPage(dummy)
+	backToSearch := func() {
+		pages.SwitchToPage("search")
+	}
+
+	name, primi, refresh := CreateTimesPage(backToSearch)
+	pages.AddPage(name, primi, true, false)
+	name, primi = CreateSearchPage(dummy)
 	pages.AddAndSwitchToPage(name, primi, true)
 
 	if err := app.SetRoot(pages, true).EnableMouse(true).Run(); err != nil {
