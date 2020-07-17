@@ -55,15 +55,6 @@ func CreateSearchPage(showTimes func(times []string)) (title string, content tvi
 	table := tview.NewTable()
 	input := tview.NewInputField()
 
-	// cycleFocus := func() {
-	// 	focused := app.GetFocus()
-	// 	if focused == input {
-	// 		app.SetFocus(table)
-	// 	} else {
-	// 		app.SetFocus(input)
-	// 	}
-	// }
-
 	tableFromArray := func(stops []StopTimes) {
 		table.Clear().
 		SetFixed(1, 1).
@@ -158,13 +149,6 @@ func CreateTimesPage(searchAgain func()) (title string, content tview.Primitive,
 }
 
 func main() {
-	// app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-	// 	if event.Key() == tcell.KeyCtrlN {
-	// 		cycleFocus()
-	// 	}
-	// 	return event
-	// })
-
 	refresh := func(times []string) {}
 	pages := tview.NewPages()
 	dummy := func(times []string) {
