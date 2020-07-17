@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"io/ioutil"
 	"strconv"
@@ -51,7 +52,7 @@ func Center(width, height int, p tview.Primitive) tview.Primitive {
 		AddItem(tview.NewBox(), 0, 1, false)
 }
 
-func CreateSearchPage(showTimes func(row int)) (title string, content tview.Primitive) {
+func CreateSearchPage(showTimes func(chosen StopTimes)) (title string, content tview.Primitive) {
 	table := tview.NewTable()
 	input := tview.NewInputField()
 
@@ -97,7 +98,9 @@ func CreateSearchPage(showTimes func(row int)) (title string, content tview.Prim
 
 		table.SetBorder(true).SetTitle("Stops and their data").SetTitleAlign(tview.AlignCenter)
 		table.SetSelectedFunc(func(row, _ int) {
-			showTimes(row)
+			if row != 0 {
+				showTimes(stops[row - 1])
+			}
 		})
 	}
 
@@ -130,8 +133,9 @@ func main() {
 	// 	return event
 	// })
 
-	dummy := func(int) {
+	dummy := func(chosen StopTimes) {
 		app.Stop()
+		fmt.Println("Ended on", chosen)
 	}
 
 	pages := tview.NewPages()
