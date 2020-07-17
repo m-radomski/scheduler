@@ -133,13 +133,17 @@ func CreateTimesPage(searchAgain func()) (title string, content tview.Primitive,
 
 		headers := "Hour;Work Day;Saturday;Holiday"
 		for c, header := range strings.Split(headers, ";") {
-			cell := tview.NewTableCell(header).SetAlign(tview.AlignCenter)
+			cell := tview.NewTableCell(header).SetAlign(tview.AlignCenter).SetExpansion(1)
 			table.SetCell(0, c, cell)
 		}
 
 		for r, time := range times {
 			for c, hms := range strings.Split(time, "; ") {
-				cell := tview.NewTableCell(hms).SetAlign(tview.AlignRight)
+				align := tview.AlignLeft
+				if c == 0 {
+					align = tview.AlignRight
+				}
+				cell := tview.NewTableCell(hms).SetAlign(align).SetExpansion(1)
 				table.SetCell(r + 1, c, cell)
 			}
 		}
