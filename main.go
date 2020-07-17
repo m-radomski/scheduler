@@ -17,9 +17,8 @@ type StopTimes struct {
 	Times []string `json:"times"`
 }
 
-var (
-	app *tview.Application
-)
+var app *tview.Application = tview.NewApplication()
+var stops []StopTimes = readJson()
 
 func readJson() []StopTimes {
 	b, err := ioutil.ReadFile("/home/mateusz/normal.json")
@@ -41,42 +40,6 @@ func findInStops(stops []StopTimes, s string) (ret []StopTimes) {
 	return
 }
 
-func TableFromArray(stops []StopTimes) *tview.Table {
-	table := tview.NewTable().
-		SetFixed(1, 1).
-		SetSelectable(true, false).
-		SetSeparator(tview.Borders.Vertical)
-	rows := len(stops)
-
-	cell := tview.NewTableCell("Line number").SetAlign(tview.AlignCenter)
-	table.SetCell(0, 0, cell)
-	cell = tview.NewTableCell("Direction").SetAlign(tview.AlignCenter)
-	table.SetCell(0, 1, cell)
-	cell = tview.NewTableCell("Stop name").SetAlign(tview.AlignCenter)
-	table.SetCell(0, 2, cell)
-
-	for r := 0; r < rows; r++ {
-		c := 0
-		cell := tview.NewTableCell(strconv.Itoa(stops[r].LineNr)).
-			SetAlign(tview.AlignCenter)
-		table.SetCell(r+1, c, cell)
-
-		c += 1
-		cell = tview.NewTableCell(stops[r].Direction).
-			SetAlign(tview.AlignCenter)
-		table.SetCell(r+1, c, cell)
-
-		c += 1
-		cell = tview.NewTableCell(stops[r].Name).
-			SetAlign(tview.AlignCenter)
-		table.SetCell(r+1, c, cell)
-	}
-
-	table.SetBorder(true).SetTitle("Stops and their data").SetTitleAlign(tview.AlignCenter)
-
-	return table
-}
-
 func Center(width, height int, p tview.Primitive) tview.Primitive {
 	return tview.NewFlex().
 		AddItem(tview.NewBox(), 0, 1, false).
@@ -88,50 +51,94 @@ func Center(width, height int, p tview.Primitive) tview.Primitive {
 		AddItem(tview.NewBox(), 0, 1, false)
 }
 
-func main() {
-	stops := readJson()
-
-	app = tview.NewApplication()
-	table := TableFromArray(stops)
+func CreateSearchPage(showTimes func(row int)) (title string, content tview.Primitive) {
+	table := tview.NewTable()
 	input := tview.NewInputField()
-	flex := tview.NewFlex()
+
+	// cycleFocus := func() {
+	// 	focused := app.GetFocus()
+	// 	if focused == input {
+	// 		app.SetFocus(table)
+	// 	} else {
+	// 		app.SetFocus(input)
+	// 	}
+	// }
+
+	tableFromArray := func(stops []StopTimes) {
+		table.Clear().
+		SetFixed(1, 1).
+		SetSelectable(true, false).
+		SetSeparator(tview.Borders.Vertical)
+		rows := len(stops)
+
+		cell := tview.NewTableCell("Line number").SetAlign(tview.AlignCenter)
+		table.SetCell(0, 0, cell)
+		cell = tview.NewTableCell("Direction").SetAlign(tview.AlignCenter)
+		table.SetCell(0, 1, cell)
+		cell = tview.NewTableCell("Stop name").SetAlign(tview.AlignCenter)
+		table.SetCell(0, 2, cell)
+
+		for r := 0; r < rows; r++ {
+			c := 0
+			cell := tview.NewTableCell(strconv.Itoa(stops[r].LineNr)).
+			SetAlign(tview.AlignCenter)
+			table.SetCell(r+1, c, cell)
+
+			c += 1
+			cell = tview.NewTableCell(stops[r].Direction).
+			SetAlign(tview.AlignCenter)
+			table.SetCell(r+1, c, cell)
+
+			c += 1
+			cell = tview.NewTableCell(stops[r].Name).
+			SetAlign(tview.AlignCenter)
+			table.SetCell(r+1, c, cell)
+		}
+
+		table.SetBorder(true).SetTitle("Stops and their data").SetTitleAlign(tview.AlignCenter)
+		table.SetSelectedFunc(func(row, _ int) {
+			showTimes(row)
+		})
+	}
+
+	showResults := func() {
+		nstops := findInStops(stops, input.GetText())
+		tableFromArray(nstops)
+		app.SetFocus(table)
+	}
+
+	tableFromArray(stops)
 
 	input.SetLabel("Search for: ").
-		SetFieldWidth(30).
 		SetDoneFunc(func(key tcell.Key) {
-			nstops := findInStops(stops, input.GetText())
-			table = TableFromArray(nstops)
-			flex.Clear()
-			flex.AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
-				AddItem(table, 0, 1, true).
-				AddItem(input, 2, 0, false),
-				0, 1, false)
+			showResults()
 		})
 
-	flex.AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
-		AddItem(table, 0, 1, true).
-		AddItem(input, 2, 0, false),
+	return "search", tview.NewFlex().
+		AddItem(tview.NewFlex().
+			SetDirection(tview.FlexRow).
+			AddItem(table, 0, 1, true).
+			AddItem(input, 2, 0, false),
 		0, 1, false)
+}
 
-	cycleFocus := func() {
-		focused := app.GetFocus()
-		if focused == input {
-			app.SetFocus(table)
-		} else {
-			app.SetFocus(input)
-		}
+func main() {
+	// app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	// 	if event.Key() == tcell.KeyCtrlN {
+	// 		cycleFocus()
+	// 	}
+	// 	return event
+	// })
+
+	dummy := func(int) {
+		app.Stop()
 	}
 
-	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyCtrlN {
-			cycleFocus()
-		}
-		return event
-	})
+	pages := tview.NewPages()
+	name, primi := CreateSearchPage(dummy)
+	pages.AddAndSwitchToPage(name, primi, true)
 
-
-	if err := app.SetRoot(flex, true).SetFocus(input).Run(); err != nil {
+	if err := app.SetRoot(pages, true).EnableMouse(true).Run(); err != nil {
 		panic(err)
 	}
-
 }
