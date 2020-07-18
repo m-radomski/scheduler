@@ -93,6 +93,7 @@ func Center(width, height int, p tview.Primitive) tview.Primitive {
 func CreateSearchPage(showTimes func(times []string)) (title string, content tview.Primitive) {
 	table := tview.NewTable()
 	input := tview.NewForm()
+	fuzzy := tview.NewForm()
 
 	tableFromArray := func(stops []StopTimes) {
 		table.Clear().
@@ -143,11 +144,16 @@ func CreateSearchPage(showTimes func(times []string)) (title string, content tvi
 		to = text
 	}
 
-	// showFuzzyResults := func() {
-	// 	nstops := findInStops(stops, input.GetText())
-	// 	tableFromArray(nstops)
-	// 	app.SetFocus(table)
-	// }
+	fuzzyTerm := ""
+	captureFuzzy := func(text string) {
+		fuzzyTerm = text
+	}
+
+	showFuzzyResults := func() {
+		nstops := findInStops(stops, fuzzyTerm)
+		tableFromArray(nstops)
+		app.SetFocus(table)
+	}
 
 	showConnectionResults := func() {
 		nstops := FindConnections(from, to, stops)
@@ -157,24 +163,25 @@ func CreateSearchPage(showTimes func(times []string)) (title string, content tvi
 
 	tableFromArray(stops)
 
-	// input.SetLabel("Search for: ").
-	// 	SetDoneFunc(func(key tcell.Key) {
-	// 		showResults()
-	// 	})
-
 	input.
 	AddInputField("From", "", 20, nil, captureFrom).
 	AddInputField("To", "", 20, nil, captureTo).
 	AddButton("Search", showConnectionResults).
 	AddButton("Go to fuzzy search", nil)
 
+	fuzzy.
+	AddInputField("Fuzzy search for", "", 20, nil, captureFuzzy).
+	AddButton("Search", showFuzzyResults).
+	AddButton("Go to connection search", nil)
+
 	input.SetBorder(true).SetTitle("Connection form").SetTitleAlign(tview.AlignLeft)
+	fuzzy.SetBorder(true).SetTitle("Fuzzy form").SetTitleAlign(tview.AlignLeft)
 
 	return "search", tview.NewFlex().
 		AddItem(tview.NewFlex().
 			SetDirection(tview.FlexRow).
 			AddItem(table, 0, 1, false).
-			AddItem(input, 9, 0, true),
+			AddItem(fuzzy, 9, 0, true),
 		0, 1, true)
 }
 
