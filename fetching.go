@@ -4,6 +4,7 @@ import (
 	"compress/gzip"
 	"os"
 	"time"
+	"strings"
 	"io/ioutil"
 	"github.com/jlaffaye/ftp"
 )
@@ -42,4 +43,22 @@ func FTPFetch(host, username, password string) {
 	if err := c.Quit(); err != nil {
 		panic(err)
 	}
+}
+
+func ReadFTPCred(path string) (host, user, pass string) {
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+
+	parts := strings.Split(string(b), ";")
+	if len(parts) != 3 {
+		panic("Garbage in ftp credentials")
+	}
+
+	host = parts[0]
+	user = parts[1]
+	pass = parts[2]
+
+	return
 }

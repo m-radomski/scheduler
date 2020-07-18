@@ -1,7 +1,8 @@
 package main
 
 import (
-	"log"
+	"fmt"
+	"os"
 	"io/ioutil"
 	"strconv"
 	"strings"
@@ -20,10 +21,17 @@ type StopTimes struct {
 var app *tview.Application = tview.NewApplication()
 var stops []StopTimes = readJson()
 
+var dbPath string = "/home/mateusz/.local/scheduler/schedule.json"
+
 func readJson() []StopTimes {
-	b, err := ioutil.ReadFile("/home/mateusz/normal.json")
+	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+		fmt.Println("Missing database file, fetching it from set FTP server")
+		FTPFetch(ReadFTPCred("my.cred"))
+	}
+
+	b, err := ioutil.ReadFile(dbPath)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	var stops []StopTimes
