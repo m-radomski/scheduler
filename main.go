@@ -59,6 +59,26 @@ func findInStops(stops []StopTimes, s string) (ret []StopTimes) {
 	return
 }
 
+func FindConnections(from, to string, stops []StopTimes) (ret []StopTimes) {
+	for i := 0; i < len(stops); i++ {
+		if stops[i].Name == from {
+			line := stops[i].LineNr
+			dir := stops[i].Direction
+
+			for j := i; j < len(stops); j++ {
+				if line == stops[j].LineNr && dir == stops[j].Direction && to == stops[j].Name {
+					ret = append(ret, stops[i])
+				} else if line != stops[j].LineNr || dir != stops[j].Direction {
+					i += j - 1 - i // skip this many stops, because the are on the same route
+					break
+				}
+			}
+		}
+	}
+
+	return
+}
+
 func Center(width, height int, p tview.Primitive) tview.Primitive {
 	return tview.NewFlex().
 		AddItem(tview.NewBox(), 0, 1, false).
