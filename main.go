@@ -21,7 +21,18 @@ type StopTimes struct {
 var app *tview.Application = tview.NewApplication()
 var stops []StopTimes = readJson()
 
-var dbPath string = "/home/mateusz/.local/scheduler/schedule.json"
+var dbPath string = CreateDatabasePath()
+
+func CreateDatabasePath() string {
+	path, exists := os.LookupEnv("XDG_DATA_HOME")
+	if exists {
+		return path + "/scheduler/schedule.json"
+	} else {
+		home := os.Getenv("HOME")
+
+		return home + "/.schedule.json"
+	}
+}
 
 func readJson() []StopTimes {
 	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
