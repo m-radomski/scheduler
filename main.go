@@ -3,6 +3,8 @@ package main
 import (
 	"strconv"
 	"strings"
+	"unicode"
+	"time"
 
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
@@ -120,6 +122,98 @@ func CreateSearchInputFlex(refreshTable func(stops []Stop)) (input *tview.Flex) 
 	return
 }
 
+const (
+	BeyondSchedule = -1
+	NotWorkDays = -2
+)
+
+func MinsToNextBus(stop Stop) (result int) {
+	now := time.Now()
+	nowHour, nowMin, _ := now.Clock()
+	stopHoursCount := len(stop.Times.Hours)
+
+	intOrPanic := func(str string) (result int) {
+		result, err := strconv.Atoi(str)
+		if err != nil {
+			panic(err)
+		}
+
+		return
+	}
+	
+	filterLetters := func(r rune) bool {
+		return unicode.IsLetter(r)
+	}
+
+	// Check if we even fit into todays schedule
+	latest := intOrPanic(stop.Times.Hours[stopHoursCount - 1])
+	if latest == 0 {
+		latest += 24
+	}
+
+	if nowHour > latest {
+		// We are no longer in todays schedule
+		return BeyondSchedule
+	}
+
+	hoffset := 0
+	for i, stopHour := range stop.Times.Hours {
+		if intOrPanic(stopHour) >= nowHour {
+			hoffset = i
+			break
+		}
+	}
+
+	moffset := 0
+	minHelper := func(mins []string) int {
+		if len(mins) == 0 {
+		}
+		
+		for j, stopMinute := range mins {
+			stopMinuteInt := 0
+			tmp := strings.TrimFunc(stopMinute, filterLetters)
+			if len(tmp) != 0 {
+				stopMinuteInt = intOrPanic(tmp)
+			} else {
+				continue
+			}
+			
+			if stopMinuteInt > nowMin {
+				return j
+			}
+		}
+
+		return -1
+	}
+	
+	for i := hoffset; i < stopHoursCount; i++ {
+		if len(stop.Times.WorkMins) != 0 {
+			res := minHelper(strings.Split(stop.Times.WorkMins[hoffset], " "))
+			if res != -1 {
+				moffset = res
+				break
+			}
+		} else {
+			// Doesn't drive on work days
+			return NotWorkDays
+		}
+
+		hoffset += 1
+	}
+
+	if hoffset == len(stop.Times.Hours) {
+		// We found the hour in this schedule
+		// but we don't fit with the minutes this time
+		return BeyondSchedule
+	}
+	
+	reshour := intOrPanic(stop.Times.Hours[hoffset])
+	tmp := strings.Split(stop.Times.WorkMins[hoffset], " ")[moffset]
+	resmins := intOrPanic(strings.TrimFunc(tmp, filterLetters))
+	
+	return (reshour - nowHour) * 60 + resmins - nowMin
+}
+
 func CreateSearchPage(showTimes func(times Times)) (title string, content tview.Primitive) {
 	table := tview.NewTable()
 
@@ -129,7 +223,7 @@ func CreateSearchPage(showTimes func(times Times)) (title string, content tview.
 		SetSelectable(true, false).
 		SetSeparator(tview.Borders.Vertical)
 
-		headers := "Line number;Direction;Stop name"
+		headers := "Line number;Direction;Stop name;Departure in"
 		for c, header := range strings.Split(headers, ";") {
 			cell := tview.NewTableCell(header).SetAlign(tview.AlignCenter).SetExpansion(1)
 			table.SetCell(0, c, cell)
@@ -147,6 +241,10 @@ func CreateSearchPage(showTimes func(times Times)) (title string, content tview.
 			cell = tview.NewTableCell(stop.Name).
 			SetAlign(tview.AlignCenter).SetExpansion(1)
 			table.SetCell(r + 1, 2, cell)
+
+			cellVal := strconv.Itoa(MinsToNextBus(stop))
+			cell = tview.NewTableCell(cellVal).SetAlign(tview.AlignCenter)
+			table.SetCell(r + 1, 3, cell)
 		}
 
 		table.SetBorder(true).SetTitle("Stops and their data").SetTitleAlign(tview.AlignCenter)
