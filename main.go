@@ -1,10 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
-	"unicode"
 	"time"
+	"unicode"
 
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
@@ -214,6 +215,19 @@ func MinsToNextBus(stop Stop) (result int) {
 	return (reshour - nowHour) * 60 + resmins - nowMin
 }
 
+func InfoNextBus(stop Stop) (result string) {
+	switch minNext := MinsToNextBus(stop); minNext {
+	case BeyondSchedule:
+		return "Beyond schedule"
+	case NotWorkDays:
+		return "Doesn't drive today"
+	default:
+		return fmt.Sprintln("Next in", minNext, "min")
+	}
+
+	return
+}
+
 func CreateSearchPage(showTimes func(times Times)) (title string, content tview.Primitive) {
 	table := tview.NewTable()
 
@@ -242,8 +256,7 @@ func CreateSearchPage(showTimes func(times Times)) (title string, content tview.
 			SetAlign(tview.AlignCenter).SetExpansion(1)
 			table.SetCell(r + 1, 2, cell)
 
-			cellVal := strconv.Itoa(MinsToNextBus(stop))
-			cell = tview.NewTableCell(cellVal).SetAlign(tview.AlignCenter)
+			cell = tview.NewTableCell(InfoNextBus(stop)).SetAlign(tview.AlignCenter)
 			table.SetCell(r + 1, 3, cell)
 		}
 
