@@ -28,7 +28,7 @@ func CreateDatabasePath() string {
 func ReadJson() []Stop {
 	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
 		fmt.Println("Missing database file, fetching it from set FTP server")
-		FTPFetch(ReadFTPCred("my.cred"))
+		DatabaseFromFTP(ReadFTPCred("my.cred"))
 	}
 
 	b, err := ioutil.ReadFile(dbPath)
@@ -41,7 +41,7 @@ func ReadJson() []Stop {
 	return stops
 }
 
-func FTPFetch(host, username, password string) {
+func FetchFTP(host, username, password string) (b *ftp.Response) {
 	c, err := ftp.Dial(host + ":21", ftp.DialWithTimeout(5*time.Second))
 	if err != nil {
 		panic(err)
@@ -58,6 +58,17 @@ func FTPFetch(host, username, password string) {
 	}
 	defer r.Close()
 
+	if err := c.Quit(); err != nil {
+		panic(err)
+	}
+
+	return
+}
+
+func DatabaseFromFTP(host, username, password string) {
+	r := FetchFTP(host, username, password)
+
+	// The response is gzip compressed
 	reader, err := gzip.NewReader(r)
 	p, err := ioutil.ReadAll(reader)
 	if err != nil {
@@ -71,10 +82,6 @@ func FTPFetch(host, username, password string) {
 	defer f.Close()
 
 	f.Write(p)
-
-	if err := c.Quit(); err != nil {
-		panic(err)
-	}
 }
 
 func ReadFTPCred(path string) (host, user, pass string) {
