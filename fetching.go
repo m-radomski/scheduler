@@ -25,7 +25,7 @@ func CreateDatabasePath() string {
 	}
 }
 
-func readJson() []Stop {
+func ReadJson() []Stop {
 	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
 		fmt.Println("Missing database file, fetching it from set FTP server")
 		FTPFetch(ReadFTPCred("my.cred"))

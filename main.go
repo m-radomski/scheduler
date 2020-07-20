@@ -23,9 +23,9 @@ type Stop struct {
 }
 
 var app *tview.Application = tview.NewApplication()
-var stops []Stop = readJson()
+var stops []Stop = ReadJson()
 
-func findInStops(stops []Stop, s string) (ret []Stop) {
+func FindInStops(stops []Stop, s string) (ret []Stop) {
 	for _, stop := range stops {
 		if strings.Contains(stop.Name, s) || strings.Contains(strconv.Itoa(stop.LineNr), s) {
 			ret = append(ret, stop)
@@ -86,7 +86,7 @@ func CreateSearchInputFlex(refreshTable func(stops []Stop)) (input *tview.Flex) 
 	}
 
 	showFuzzyResults := func() {
-		nstops := findInStops(stops, fuzzyTerm)
+		nstops := FindInStops(stops, fuzzyTerm)
 		refreshTable(nstops)
 	}
 
