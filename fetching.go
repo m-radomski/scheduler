@@ -12,6 +12,8 @@ import (
 	"github.com/jlaffaye/ftp"
 )
 
+var dbPath string = CreateDatabasePath()
+
 func CreateDatabasePath() string {
 	path, exists := os.LookupEnv("XDG_DATA_HOME")
 	if exists {

@@ -25,8 +25,6 @@ type Stop struct {
 var app *tview.Application = tview.NewApplication()
 var stops []Stop = readJson()
 
-var dbPath string = CreateDatabasePath()
-
 func findInStops(stops []Stop, s string) (ret []Stop) {
 	for _, stop := range stops {
 		if strings.Contains(stop.Name, s) || strings.Contains(strconv.Itoa(stop.LineNr), s) {
