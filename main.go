@@ -166,7 +166,7 @@ func MinsToNextBus(stop Stop) (result int) {
 	}
 
 	moffset := 0
-	minHelper := func(mins []string) int {
+	minHelper := func(mins []string, cmpMin int) int {
 		if len(mins) == 0 {
 		}
 		
@@ -179,17 +179,18 @@ func MinsToNextBus(stop Stop) (result int) {
 				continue
 			}
 			
-			if stopMinuteInt > nowMin {
+			if stopMinuteInt >= cmpMin {
 				return j
 			}
 		}
 
 		return -1
 	}
-	
+
+	cmp := nowMin
 	for i := hoffset; i < stopHoursCount; i++ {
 		if len(stop.Times.WorkMins) != 0 {
-			res := minHelper(strings.Split(stop.Times.WorkMins[hoffset], " "))
+			res := minHelper(strings.Split(stop.Times.WorkMins[hoffset], " "), cmp)
 			if res != -1 {
 				moffset = res
 				break
@@ -199,6 +200,7 @@ func MinsToNextBus(stop Stop) (result int) {
 			return NotWorkDays
 		}
 
+		cmp = 0
 		hoffset += 1
 	}
 
