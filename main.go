@@ -1,10 +1,6 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"os"
 	"strconv"
 	"strings"
 
@@ -30,33 +26,6 @@ var app *tview.Application = tview.NewApplication()
 var stops []Stop = readJson()
 
 var dbPath string = CreateDatabasePath()
-
-func CreateDatabasePath() string {
-	path, exists := os.LookupEnv("XDG_DATA_HOME")
-	if exists {
-		return path + "/scheduler/schedule.json"
-	} else {
-		home := os.Getenv("HOME")
-
-		return home + "/.schedule.json"
-	}
-}
-
-func readJson() []Stop {
-	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
-		fmt.Println("Missing database file, fetching it from set FTP server")
-		FTPFetch(ReadFTPCred("my.cred"))
-	}
-
-	b, err := ioutil.ReadFile(dbPath)
-	if err != nil {
-		panic(err)
-	}
-
-	var stops []Stop
-	json.Unmarshal(b, &stops)
-	return stops
-}
 
 func findInStops(stops []Stop, s string) (ret []Stop) {
 	for _, stop := range stops {

@@ -2,6 +2,8 @@ package main
 
 import (
 	"compress/gzip"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -9,6 +11,33 @@ import (
 
 	"github.com/jlaffaye/ftp"
 )
+
+func CreateDatabasePath() string {
+	path, exists := os.LookupEnv("XDG_DATA_HOME")
+	if exists {
+		return path + "/scheduler/schedule.json"
+	} else {
+		home := os.Getenv("HOME")
+
+		return home + "/.schedule.json"
+	}
+}
+
+func readJson() []Stop {
+	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+		fmt.Println("Missing database file, fetching it from set FTP server")
+		FTPFetch(ReadFTPCred("my.cred"))
+	}
+
+	b, err := ioutil.ReadFile(dbPath)
+	if err != nil {
+		panic(err)
+	}
+
+	var stops []Stop
+	json.Unmarshal(b, &stops)
+	return stops
+}
 
 func FTPFetch(host, username, password string) {
 	c, err := ftp.Dial(host + ":21", ftp.DialWithTimeout(5*time.Second))
