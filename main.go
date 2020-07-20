@@ -11,15 +11,22 @@ import (
 	"github.com/rivo/tview"
 )
 
-type StopTimes struct {
+type Times struct {
+	Hours []string `json:"hour"`
+	WorkMins []string `json:"work"`
+	SaturdayMins []string `json:"saturday"`
+	HolidayMins []string `json:"holiday"`
+}
+
+type Stop struct {
 	LineNr int `json:"line"`
 	Direction string `json:"direction"`
 	Name string `json:"stop_name"`
-	Times []string `json:"times"`
+	Times Times `json:"times"`
 }
 
 var app *tview.Application = tview.NewApplication()
-var stops []StopTimes = readJson()
+var stops []Stop = readJson()
 
 var dbPath string = CreateDatabasePath()
 
@@ -34,7 +41,7 @@ func CreateDatabasePath() string {
 	}
 }
 
-func readJson() []StopTimes {
+func readJson() []Stop {
 	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
 		fmt.Println("Missing database file, fetching it from set FTP server")
 		FTPFetch(ReadFTPCred("my.cred"))
@@ -45,12 +52,12 @@ func readJson() []StopTimes {
 		panic(err)
 	}
 
-	var stops []StopTimes
+	var stops []Stop
 	json.Unmarshal(b, &stops)
 	return stops
 }
 
-func findInStops(stops []StopTimes, s string) (ret []StopTimes) {
+func findInStops(stops []Stop, s string) (ret []Stop) {
 	for _, stop := range stops {
 		if strings.Contains(stop.Name, s) || strings.Contains(strconv.Itoa(stop.LineNr), s) {
 			ret = append(ret, stop)
@@ -59,7 +66,7 @@ func findInStops(stops []StopTimes, s string) (ret []StopTimes) {
 	return
 }
 
-func FindConnections(from, to string, stops []StopTimes) (ret []StopTimes) {
+func FindConnections(from, to string, stops []Stop) (ret []Stop) {
 	for i := 0; i < len(stops); i++ {
 		if stops[i].Name == from {
 			line := stops[i].LineNr
@@ -90,7 +97,7 @@ func Center(width, height int, p tview.Primitive) tview.Primitive {
 		AddItem(tview.NewBox(), 0, 1, false)
 }
 
-func CreateSearchInputFlex(refreshTable func(stops []StopTimes)) (input *tview.Flex) {
+func CreateSearchInputFlex(refreshTable func(stops []Stop)) (input *tview.Flex) {
 	connection := tview.NewForm()
 	fuzzy := tview.NewForm()
 	input = tview.NewFlex()
@@ -145,10 +152,10 @@ func CreateSearchInputFlex(refreshTable func(stops []StopTimes)) (input *tview.F
 	return
 }
 
-func CreateSearchPage(showTimes func(times []string)) (title string, content tview.Primitive) {
+func CreateSearchPage(showTimes func(times Times)) (title string, content tview.Primitive) {
 	table := tview.NewTable()
 
-	tableFromArray := func(stops []StopTimes) {
+	tableFromArray := func(stops []Stop) {
 		table.Clear().
 		SetFixed(1, 1).
 		SetSelectable(true, false).
@@ -196,10 +203,19 @@ func CreateSearchPage(showTimes func(times []string)) (title string, content tvi
 		0, 1, true)
 }
 
-func CreateTimesPage(searchAgain func()) (title string, content tview.Primitive, refresh func(times []string)) {
+func CreateTimesPage(searchAgain func()) (title string, content tview.Primitive, refresh func(times Times)) {
 	table := tview.NewTable()
 
-	refresh = func(times []string) {
+	minsOrEmpty := func(mins []string, i int) (result string) {
+		result = ""
+		if len(mins) != 0 {
+			result = mins[i]
+		}
+
+		return
+	}
+
+	refresh = func(times Times) {
 		table.Clear()
 		table.SetSelectable(true, true).SetSeparator(tview.Borders.Vertical)
 
@@ -209,15 +225,24 @@ func CreateTimesPage(searchAgain func()) (title string, content tview.Primitive,
 			table.SetCell(0, c, cell)
 		}
 
-		for r, time := range times {
-			for c, hms := range strings.Split(time, "; ") {
-				align := tview.AlignLeft
-				if c == 0 {
-					align = tview.AlignRight
-				}
-				cell := tview.NewTableCell(hms).SetAlign(align).SetExpansion(1)
-				table.SetCell(r + 1, c, cell)
-			}
+		for r, hour := range times.Hours {
+			cell := tview.NewTableCell(hour).SetAlign(tview.AlignRight).SetExpansion(1)
+			table.SetCell(r + 1, 0, cell)
+
+			cell = tview.NewTableCell(minsOrEmpty(times.WorkMins, r)).
+				SetAlign(tview.AlignLeft).
+				SetExpansion(1)
+			table.SetCell(r + 1, 1, cell)
+			
+			cell = tview.NewTableCell(minsOrEmpty(times.SaturdayMins, r)).
+				SetAlign(tview.AlignLeft).
+				SetExpansion(1)
+			table.SetCell(r + 1, 2, cell)
+			
+			cell = tview.NewTableCell(minsOrEmpty(times.HolidayMins, r)).
+				SetAlign(tview.AlignLeft).
+				SetExpansion(1)
+			table.SetCell(r + 1, 3, cell)
 		}
 
 		table.SetBorder(true).SetTitle("Departures/Arrivals").SetTitleAlign(tview.AlignCenter)
@@ -232,8 +257,8 @@ func CreateTimesPage(searchAgain func()) (title string, content tview.Primitive,
 func main() {
 	pages := tview.NewPages()
 
-	refresh := func(times []string) {}
-	dummy := func(times []string) {
+	refresh := func(times Times) {}
+	dummy := func(times Times) {
 		refresh(times)
 		pages.SwitchToPage("times")
 	}
