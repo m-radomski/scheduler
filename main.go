@@ -1,12 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"os"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
-	"encoding/json"
+
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 )

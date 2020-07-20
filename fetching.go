@@ -2,10 +2,11 @@ package main
 
 import (
 	"compress/gzip"
-	"os"
-	"time"
-	"strings"
 	"io/ioutil"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/jlaffaye/ftp"
 )
 
