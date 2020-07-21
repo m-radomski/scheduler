@@ -187,10 +187,20 @@ func MinsToNextBus(stop Stop) (result int) {
 		return -1
 	}
 
+	var lookupMins []string
+	switch nowDay := now.Weekday(); nowDay {
+	case time.Sunday:
+		lookupMins = stop.Times.HolidayMins
+	case time.Saturday:
+		lookupMins = stop.Times.SaturdayMins
+	default:
+		lookupMins = stop.Times.WorkMins
+	}
+
 	cmp := nowMin
 	for i := hoffset; i < stopHoursCount; i++ {
-		if len(stop.Times.WorkMins) != 0 {
-			res := minHelper(strings.Split(stop.Times.WorkMins[hoffset], " "), cmp)
+		if len(lookupMins) != 0 {
+			res := minHelper(strings.Split(lookupMins[hoffset], " "), cmp)
 			if res != -1 {
 				moffset = res
 				break
