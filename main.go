@@ -236,8 +236,6 @@ func InfoNextBus(stop Stop) (result string) {
 	default:
 		return fmt.Sprintln("Next in", minNext, "min")
 	}
-
-	return
 }
 
 func CreateSearchPage(showTimes func(times Times)) (title string, content tview.Primitive) {
