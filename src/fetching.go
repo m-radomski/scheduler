@@ -3,6 +3,7 @@ package scheduler
 import (
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -29,7 +30,10 @@ func CreateDatabasePath() string {
 func ReadJson() []Stop {
 	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
 		fmt.Println("Missing database file, fetching it from the web")
-		DatabaseFromWeb()
+		err := DatabaseFromWeb()
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	b, err := ioutil.ReadFile(dbPath)
@@ -42,80 +46,92 @@ func ReadJson() []Stop {
 	return stops
 }
 
-func DatabaseFromWeb() {
+func DatabaseFromWeb() error {
 	r, err := http.Get("https://mradomski.top/scheduler/latest.json.gz")
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer r.Body.Close()
 
 	gzReader, err := gzip.NewReader(r.Body)
 	content, err := ioutil.ReadAll(gzReader)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	f, err := os.OpenFile(dbPath, os.O_RDWR | os.O_CREATE, 0755)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer f.Close()
 
 	f.Write(content)
+	return nil
 }
 
-func FetchFTP(host, username, password string) (b *ftp.Response) {
+func FetchFTP(host, username, password string) (b *ftp.Response, err error) {
 	c, err := ftp.Dial(host + ":21", ftp.DialWithTimeout(5*time.Second))
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	err = c.Login(username, password)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	r, err := c.Retr("schedule.json.gz")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer r.Close()
 
 	if err := c.Quit(); err != nil {
 		panic(err)
+		return r, err
 	}
 
-	return
+	return r, nil
 }
 
-func DatabaseFromFTP(host, username, password string) {
-	r := FetchFTP(host, username, password)
+func DatabaseFromFTP(host, username, password string) (e error) {
+	r, err := FetchFTP(host, username, password)
+	if err != nil {
+		return err
+	}
 
 	// The response is gzip compressed
 	reader, err := gzip.NewReader(r)
+	if err != nil {
+		return err
+	}
+	
 	p, err := ioutil.ReadAll(reader)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	f, err := os.OpenFile(dbPath, os.O_RDWR | os.O_CREATE, 0755)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer f.Close()
 
 	f.Write(p)
+	return
 }
 
-func ReadFTPCred(path string) (host, user, pass string) {
+func ReadFTPCred(path string) (host, user, pass string, e error) {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
-		panic(err)
+		e = err
+		return 
 	}
 
 	parts := strings.Split(string(b), ";")
 	if len(parts) != 3 {
-		panic("Garbage in ftp credentials")
+		e = errors.New("Garbage in ftp credentials")
+		return
 	}
 
 	host = parts[0]
