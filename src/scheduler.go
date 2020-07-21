@@ -39,12 +39,15 @@ func FindInStops(stops []Stop, s string) (ret []Stop) {
 
 func FindConnections(from, to string, stops []Stop) (ret []Stop) {
 	for i := 0; i < len(stops); i++ {
-		if stops[i].Name == from {
+		//		if stops[i].Name == from { // use this for exact matching
+		if IsFuzzyEqualInsens(from, stops[i].Name, 0.9) {
 			line := stops[i].LineNr
 			dir := stops[i].Direction
 
 			for j := i; j < len(stops); j++ {
-				if line == stops[j].LineNr && dir == stops[j].Direction && to == stops[j].Name {
+				if line == stops[j].LineNr && dir == stops[j].Direction &&
+					// to == stops[j].Name { // use this for exact matching
+					IsFuzzyEqualInsens(to, stops[j].Name, 0.9) {
 					ret = append(ret, stops[i])
 				} else if line != stops[j].LineNr || dir != stops[j].Direction {
 					i += j - 1 - i // skip this many stops, because the are on the same route

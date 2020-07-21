@@ -10,6 +10,14 @@ func Max(a, b int) int {
 	}
 }
 
+func Min(a, b int) int {
+	if a < b {
+		return a
+	} else {
+		return b
+	}
+}
+
 // Based on
 // https://en.wikipedia.org/wiki/Jaro%E2%80%93Winkler_distance
 func JWDist(str1, str2 string) (weight float64) {
@@ -108,4 +116,8 @@ func FuzzyScaleInsens(str1, str2 string) float64 {
 
 	dist := JWDist(lower1, lower2)
 	return dist
+}
+
+func IsFuzzyEqualInsens(str1, str2 string, treshold float64) bool {
+	return FuzzyScaleInsens(str1, str2) >= treshold
 }
