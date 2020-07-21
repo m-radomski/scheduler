@@ -87,11 +87,12 @@ func JWDist(str1, str2 string) (weight float64) {
 	len2f := float64(len(str2))
 	weight = (mf / len1f + mf / len2f + (mf - (float64(transpos) / 2.0)) / mf) / 3.0
 	const scaling float64 = 0.1
+	shortest := Min(len(str1), len(str2))
 	l := 0
 
 	// Counting up to 4 chars, the ones that are the same at the start of the string
 	if weight > 0.7 {
-		for str1[l] == str2[l] && l < 4 {
+		for l < shortest && str1[l] == str2[l] && l < 4 {
 			l += 1
 		}
 	}
