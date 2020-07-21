@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"net/http"
 	"strings"
 	"time"
 
@@ -27,8 +28,8 @@ func CreateDatabasePath() string {
 
 func ReadJson() []Stop {
 	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
-		fmt.Println("Missing database file, fetching it from set FTP server")
-		DatabaseFromFTP(ReadFTPCred("my.cred"))
+		fmt.Println("Missing database file, fetching it from the web")
+		DatabaseFromWeb()
 	}
 
 	b, err := ioutil.ReadFile(dbPath)
@@ -39,6 +40,28 @@ func ReadJson() []Stop {
 	var stops []Stop
 	json.Unmarshal(b, &stops)
 	return stops
+}
+
+func DatabaseFromWeb() {
+	r, err := http.Get("https://mradomski.top/scheduler/latest.json.gz")
+	if err != nil {
+		panic(err)
+	}
+	defer r.Body.Close()
+
+	gzReader, err := gzip.NewReader(r.Body)
+	content, err := ioutil.ReadAll(gzReader)
+	if err != nil {
+		panic(err)
+	}
+
+	f, err := os.OpenFile(dbPath, os.O_RDWR | os.O_CREATE, 0755)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	f.Write(content)
 }
 
 func FetchFTP(host, username, password string) (b *ftp.Response) {
