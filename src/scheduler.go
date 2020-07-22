@@ -355,7 +355,7 @@ func Run() {
 	pages := tview.NewPages()
 
 	refresh := func(times Times) {}
-	dummy := func(times Times) {
+	showTimes := func(times Times) {
 		refresh(times)
 		pages.SwitchToPage("times")
 	}
@@ -366,7 +366,7 @@ func Run() {
 
 	name, primi, refresh := CreateTimesPage(backToSearch)
 	pages.AddPage(name, primi, true, false)
-	name, primi = CreateSearchPage(dummy)
+	name, primi = CreateSearchPage(showTimes)
 	pages.AddPage(name, primi, true, true)
 
 	if err := app.SetRoot(pages, true).EnableMouse(true).Run(); err != nil {
