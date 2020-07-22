@@ -14,6 +14,20 @@ import (
 	"github.com/jlaffaye/ftp"
 )
 
+type Times struct {
+	Hours []string `json:"hour"`
+	WorkMins []string `json:"work"`
+	SaturdayMins []string `json:"saturday"`
+	HolidayMins []string `json:"holiday"`
+}
+
+type Stop struct {
+	LineNr int `json:"line"`
+	Direction string `json:"direction"`
+	Name string `json:"stop_name"`
+	Times Times `json:"times"`
+}
+
 var dbPath string = CreateDatabasePath()
 
 func CreateDatabasePath() string {
