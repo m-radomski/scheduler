@@ -357,10 +357,23 @@ func CreateTimesPage(searchAgain func()) (title string, content tview.Primitive,
 
 	return "times", Center(80, 25, viewable.Times), refresh
 }
+func UpdateUncompleteTable() {
+	const updateInterval = 25 * time.Millisecond
+	for !globalDB.Complete {
+		app.QueueUpdateDraw(func() {
+			viewable.Search.Table.SetTitle("Data is now being loaded")
+		})
+		time.Sleep(updateInterval)
+	}
+
+	app.QueueUpdateDraw(func() {
+		viewable.Search.Table.SetTitle("All data is now loaded")
+	})
 }
 
 func Run() {
 	ReadJson()
+	go UpdateUncompleteTable()
 	
 	refresh := func(times Times) {}
 	showTimes := func(times Times) {
