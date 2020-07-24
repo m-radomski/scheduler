@@ -12,7 +12,7 @@ import (
 )
 
 var app *tview.Application = tview.NewApplication()
-var stops []Stop
+var globalDB Database
 
 func FindInStops(stops []Stop, s string) (ret []Stop) {
 	for _, stop := range stops {
@@ -69,7 +69,7 @@ func CreateSearchInputFlex(refreshTable func(stops []Stop)) (input *tview.Flex) 
 	input = tview.NewFlex()
 	
 	showConnectionResults := func(from, to string) {
-		nstops := FindConnections(from, to, stops)
+		nstops := FindConnections(from, to, globalDB.Stops)
 		refreshTable(nstops)
 	}
 
@@ -91,7 +91,7 @@ func CreateSearchInputFlex(refreshTable func(stops []Stop)) (input *tview.Flex) 
 
 	fuzzyTerm := ""
 	showFuzzyResults := func() {
-		nstops := FindInStops(stops, fuzzyTerm)
+		nstops := FindInStops(globalDB.Stops, fuzzyTerm)
 		refreshTable(nstops)
 	}
 	
@@ -274,7 +274,7 @@ func CreateSearchPage(showTimes func(times Times)) (title string, content tview.
 		//	app.SetFocus(table)
 	}
 
-	tableFromArray(stops)
+	tableFromArray(globalDB.Stops)
 
 	input := CreateSearchInputFlex(tableFromArray)
 

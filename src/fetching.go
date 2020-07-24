@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"net/http"
@@ -27,6 +28,11 @@ type Stop struct {
 	Direction string `json:"direction"`
 	Name string `json:"stop_name"`
 	Times Times `json:"times"`
+}
+
+type Database struct {
+	Stops []Stop
+	Complete bool
 }
 
 var dbPath string = CreateDatabasePath()
@@ -56,31 +62,37 @@ func ReadJson() {
 		panic(err)
 	}
 
-	go func() {
-		dec := json.NewDecoder(bytes.NewReader(b))
-		_, err := dec.Token()
-		if err != nil {
-			panic(err)
-		}
-		
-		for dec.More() {
-			var s Stop
-			err := dec.Decode(&s)
-			if err != nil {
-				panic(err)
-			}
+	go ConcurJSONDec(bytes.NewReader(b))
 
-			stops = append(stops, s)
-		}
-
-		_, err = dec.Token()
-		if err != nil {
-			panic(err)
-		}
-	}()
-
-	for len(stops) < 100 {
+	// TODO(radomski): Make the displaying real time, so the stops would appear as they are read in
+	// Wait for at least 100 connections so we have something to display
+	for len(globalDB.Stops) < 100 {
 		time.Sleep(time.Millisecond)
+	}
+}
+
+func ConcurJSONDec(reader io.Reader) {
+	dec := json.NewDecoder(reader)
+	_, err := dec.Token()
+	if err != nil {
+		panic(err)
+	}
+		
+	for dec.More() {
+		var s Stop
+		err := dec.Decode(&s)
+		if err != nil {
+			panic(err)
+		}
+
+		globalDB.Stops = append(globalDB.Stops, s)
+	}
+
+	globalDB.Complete = true
+	
+	_, err = dec.Token()
+	if err != nil {
+		panic(err)
 	}
 }
 
