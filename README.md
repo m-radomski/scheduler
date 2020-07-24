@@ -2,6 +2,11 @@
 `scheduler` is a simple command line interface for planning your route using premade JSON databases.
 It's created for [Cracow's](http://ztp.krakow.pl/) public transport system, but anybody with the correct database can use it.
 
+# Installation
+For people that know what they are going, all you need is to have `go` installed on your computer.
+From there you can type the following command: `go get -u https://github.com/m-radomski/scheduler`. 
+This downloads and installs the program into your `GOPATH`, from there just run the command `scheduler`. 
+
 # Usage
 The window is split into 3 main panels.
 The biggest one shows you relevant connections, which line number it's on, stop name and next departure time.
