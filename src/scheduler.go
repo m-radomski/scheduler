@@ -12,7 +12,7 @@ import (
 )
 
 var app *tview.Application = tview.NewApplication()
-var stops []Stop = ReadJson()
+var stops []Stop
 
 func FindInStops(stops []Stop, s string) (ret []Stop) {
 	for _, stop := range stops {
@@ -338,6 +338,8 @@ func CreateTimesPage(searchAgain func()) (title string, content tview.Primitive,
 }
 
 func Run() {
+	ReadJson()
+	
 	pages := tview.NewPages()
 
 	refresh := func(times Times) {}

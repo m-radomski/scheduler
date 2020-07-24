@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"bytes"
 
 	"github.com/jlaffaye/ftp"
 )
@@ -41,7 +42,7 @@ func CreateDatabasePath() string {
 	}
 }
 
-func ReadJson() []Stop {
+func ReadJson() {
 	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
 		fmt.Println("Missing database file, fetching it from the web")
 		err := DatabaseFromWeb()
@@ -55,9 +56,32 @@ func ReadJson() []Stop {
 		panic(err)
 	}
 
-	var stops []Stop
-	json.Unmarshal(b, &stops)
-	return stops
+	go func() {
+		dec := json.NewDecoder(bytes.NewReader(b))
+		_, err := dec.Token()
+		if err != nil {
+			panic(err)
+		}
+		
+		for dec.More() {
+			var s Stop
+			err := dec.Decode(&s)
+			if err != nil {
+				panic(err)
+			}
+
+			stops = append(stops, s)
+		}
+
+		_, err = dec.Token()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	for len(stops) < 100 {
+		time.Sleep(time.Millisecond)
+	}
 }
 
 func DatabaseFromWeb() error {
