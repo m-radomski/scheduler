@@ -11,8 +11,23 @@ import (
 	"github.com/rivo/tview"
 )
 
-var app *tview.Application = tview.NewApplication()
-var globalDB Database
+type SearchViewable struct {
+	Table *tview.Table
+	Connection *tview.Form
+	Fuzzy *tview.Form
+}
+
+type Viewable struct {
+	Pages *tview.Pages
+	Times *tview.Table
+	Search SearchViewable
+}
+
+var (
+	app *tview.Application = tview.NewApplication()
+	viewable Viewable
+	globalDB Database
+)
 
 func FindInStops(stops []Stop, s string) (ret []Stop) {
 	for _, stop := range stops {
@@ -64,8 +79,8 @@ func Center(width, height int, p tview.Primitive) tview.Primitive {
 }
 
 func CreateSearchInputFlex(refreshTable func(stops []Stop)) (input *tview.Flex) {
-	connection := tview.NewForm()
-	fuzzy := tview.NewForm()
+	viewable.Search.Connection = tview.NewForm()
+	viewable.Search.Fuzzy = tview.NewForm()
 	input = tview.NewFlex()
 	
 	showConnectionResults := func(from, to string) {
@@ -100,19 +115,23 @@ func CreateSearchInputFlex(refreshTable func(stops []Stop)) (input *tview.Flex) 
 		showFuzzyResults()
 	}
 
-	connection.
+	viewable.Search.Connection.
 	AddInputField("From", "", 20, nil, captureFrom).
 	AddInputField("To", "", 20, nil, captureTo)
 
-	fuzzy.
+	viewable.Search.Fuzzy.
 	AddInputField("Fuzzy search for", "", 20, nil, captureFuzzy)
 
-	connection.SetBorder(true).SetTitle("Connection form").SetTitleAlign(tview.AlignLeft)
-	fuzzy.SetBorder(true).SetTitle("Fuzzy form").SetTitleAlign(tview.AlignLeft)
+	viewable.Search.Connection.SetBorder(true).
+		SetTitle("Connection form").
+		SetTitleAlign(tview.AlignLeft)
+	viewable.Search.Fuzzy.SetBorder(true).
+		SetTitle("Fuzzy form").
+		SetTitleAlign(tview.AlignLeft)
 
 	input.
-	AddItem(connection, 0, 1, true).
-	AddItem(fuzzy, 0, 1, true)
+	AddItem(viewable.Search.Connection, 0, 1, true).
+	AddItem(viewable.Search.Fuzzy, 0, 1, true)
 
 	return
 }
@@ -233,10 +252,10 @@ func InfoNextBus(stop Stop) (result string) {
 }
 
 func CreateSearchPage(showTimes func(times Times)) (title string, content tview.Primitive) {
-	table := tview.NewTable()
+	viewable.Search.Table = tview.NewTable()
 
 	tableFromArray := func(stops []Stop) {
-		table.Clear().
+		viewable.Search.Table.Clear().
 		SetFixed(1, 1).
 		SetSelectable(true, false).
 		SetSeparator(tview.Borders.Vertical)
@@ -244,34 +263,36 @@ func CreateSearchPage(showTimes func(times Times)) (title string, content tview.
 		headers := "Line number;Direction;Stop name;Departure in"
 		for c, header := range strings.Split(headers, ";") {
 			cell := tview.NewTableCell(header).SetAlign(tview.AlignCenter).SetExpansion(1)
-			table.SetCell(0, c, cell)
+			viewable.Search.Table.SetCell(0, c, cell)
 		}
 
 		for r, stop := range stops {
 			cell := tview.NewTableCell(strconv.Itoa(stop.LineNr)).
 			SetAlign(tview.AlignCenter).SetExpansion(1)
-			table.SetCell(r + 1, 0, cell)
+			viewable.Search.Table.SetCell(r + 1, 0, cell)
 
 			cell = tview.NewTableCell(stop.Direction).
 			SetAlign(tview.AlignCenter).SetExpansion(1)
-			table.SetCell(r + 1, 1, cell)
+			viewable.Search.Table.SetCell(r + 1, 1, cell)
 
 			cell = tview.NewTableCell(stop.Name).
 			SetAlign(tview.AlignCenter).SetExpansion(1)
-			table.SetCell(r + 1, 2, cell)
+			viewable.Search.Table.SetCell(r + 1, 2, cell)
 
 			cell = tview.NewTableCell(InfoNextBus(stop)).SetAlign(tview.AlignCenter)
-			table.SetCell(r + 1, 3, cell)
+			viewable.Search.Table.SetCell(r + 1, 3, cell)
 		}
 
-		table.SetBorder(true).SetTitle("Stops and their data").SetTitleAlign(tview.AlignCenter)
-		table.SetSelectedFunc(func(row, _ int) {
+		viewable.Search.Table.SetBorder(true).
+			SetTitle("Stops and their data").
+			SetTitleAlign(tview.AlignCenter)
+		viewable.Search.Table.SetSelectedFunc(func(row, _ int) {
 			if row != 0 {
 				showTimes(stops[row - 1].Times)
 			}
 		})
 
-		//	app.SetFocus(table)
+		//	app.SetFocus(viewable.Search.Table)
 	}
 
 	tableFromArray(globalDB.Stops)
@@ -281,13 +302,13 @@ func CreateSearchPage(showTimes func(times Times)) (title string, content tview.
 	return "search", tview.NewFlex().
 		AddItem(tview.NewFlex().
 			SetDirection(tview.FlexRow).
-			AddItem(table, 0, 1, false).
+			AddItem(viewable.Search.Table, 0, 1, false).
 			AddItem(input, 9, 0, true),
 		0, 1, true)
 }
 
 func CreateTimesPage(searchAgain func()) (title string, content tview.Primitive, refresh func(times Times)) {
-	table := tview.NewTable()
+	viewable.Times = tview.NewTable()
 
 	minsOrEmpty := func(mins []string, i int) (result string) {
 		result = ""
@@ -299,65 +320,65 @@ func CreateTimesPage(searchAgain func()) (title string, content tview.Primitive,
 	}
 
 	refresh = func(times Times) {
-		table.Clear()
-		table.SetSelectable(true, true).SetSeparator(tview.Borders.Vertical)
+		viewable.Times.Clear()
+		viewable.Times.SetSelectable(true, true).SetSeparator(tview.Borders.Vertical)
 
 		headers := "Hour;Work Day;Saturday;Holiday"
 		for c, header := range strings.Split(headers, ";") {
 			cell := tview.NewTableCell(header).SetAlign(tview.AlignCenter).SetExpansion(1)
-			table.SetCell(0, c, cell)
+			viewable.Times.SetCell(0, c, cell)
 		}
 
 		for r, hour := range times.Hours {
 			cell := tview.NewTableCell(hour).SetAlign(tview.AlignRight).SetExpansion(1)
-			table.SetCell(r + 1, 0, cell)
+			viewable.Times.SetCell(r + 1, 0, cell)
 
 			cell = tview.NewTableCell(minsOrEmpty(times.WorkMins, r)).
 				SetAlign(tview.AlignLeft).
 				SetExpansion(1)
-			table.SetCell(r + 1, 1, cell)
+			viewable.Times.SetCell(r + 1, 1, cell)
 			
 			cell = tview.NewTableCell(minsOrEmpty(times.SaturdayMins, r)).
 				SetAlign(tview.AlignLeft).
 				SetExpansion(1)
-			table.SetCell(r + 1, 2, cell)
+			viewable.Times.SetCell(r + 1, 2, cell)
 			
 			cell = tview.NewTableCell(minsOrEmpty(times.HolidayMins, r)).
 				SetAlign(tview.AlignLeft).
 				SetExpansion(1)
-			table.SetCell(r + 1, 3, cell)
+			viewable.Times.SetCell(r + 1, 3, cell)
 		}
 
-		table.SetBorder(true).SetTitle("Departures/Arrivals").SetTitleAlign(tview.AlignCenter)
-		table.SetDoneFunc(func (key tcell.Key) {
+		viewable.Times.SetBorder(true).SetTitle("Departures/Arrivals").SetTitleAlign(tview.AlignCenter)
+		viewable.Times.SetDoneFunc(func (key tcell.Key) {
 			searchAgain()
 		})
 	}
 
-	return "times", Center(80, 25, table), refresh
+	return "times", Center(80, 25, viewable.Times), refresh
+}
 }
 
 func Run() {
 	ReadJson()
 	
-	pages := tview.NewPages()
-
 	refresh := func(times Times) {}
 	showTimes := func(times Times) {
 		refresh(times)
-		pages.SwitchToPage("times")
+		viewable.Pages.SwitchToPage("times")
 	}
 
 	backToSearch := func() {
-		pages.SwitchToPage("search")
+		viewable.Pages.SwitchToPage("search")
 	}
 
+	viewable.Pages = tview.NewPages()
 	name, primi, refresh := CreateTimesPage(backToSearch)
-	pages.AddPage(name, primi, true, false)
+	viewable.Pages.AddPage(name, primi, true, false)
 	name, primi = CreateSearchPage(showTimes)
-	pages.AddPage(name, primi, true, true)
+	viewable.Pages.AddPage(name, primi, true, true)
 
-	if err := app.SetRoot(pages, true).EnableMouse(true).Run(); err != nil {
+	if err := app.SetRoot(viewable.Pages, true).EnableMouse(true).Run(); err != nil {
 		panic(err)
 	}
 }
