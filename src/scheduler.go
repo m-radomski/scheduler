@@ -234,7 +234,7 @@ func MinsToNextBus(stop Stop) (result int) {
 	}
 	
 	reshour := intOrPanic(stop.Times.Hours[hoffset])
-	tmp := strings.Split(stop.Times.WorkMins[hoffset], " ")[moffset]
+	tmp := strings.Split(lookupMins[hoffset], " ")[moffset]
 	resmins := intOrPanic(strings.TrimFunc(tmp, filterLetters))
 	
 	return (reshour - nowHour) * 60 + resmins - nowMin
