@@ -141,26 +141,47 @@ const (
 	NotWorkDays = -2
 )
 
+func IntOrPanic(str string) (result int) {
+	result, err := strconv.Atoi(str)
+	if err != nil {
+		panic(err)
+	}
+
+	return
+}
+	
+func CurrentHourIndex(current int, stopHours []string) int {
+	for i, stopHour := range stopHours {
+		if IntOrPanic(stopHour) >= current {
+			return i
+		}
+	}
+
+	return -1
+}
+
+func TodaysMins(now time.Time, mins Times) []string {
+	switch nowDay := now.Weekday(); nowDay {
+	case time.Sunday:
+		return mins.HolidayMins
+	case time.Saturday:
+		return mins.SaturdayMins
+	default:
+		return mins.WorkMins
+	}
+}
+
 func MinsToNextBus(stop Stop) (result int) {
 	now := time.Now()
 	nowHour, nowMin, _ := now.Clock()
-	stopHoursCount := len(stop.Times.Hours)
 
-	intOrPanic := func(str string) (result int) {
-		result, err := strconv.Atoi(str)
-		if err != nil {
-			panic(err)
-		}
-
-		return
-	}
-	
 	filterLetters := func(r rune) bool {
 		return unicode.IsLetter(r)
 	}
 
 	// Check if we even fit into todays schedule
-	latest := intOrPanic(stop.Times.Hours[stopHoursCount - 1])
+	stopHoursCount := len(stop.Times.Hours)
+	latest := IntOrPanic(stop.Times.Hours[stopHoursCount - 1])
 	if latest == 0 {
 		latest += 24
 	}
@@ -169,30 +190,25 @@ func MinsToNextBus(stop Stop) (result int) {
 		// We are no longer in todays schedule
 		return BeyondSchedule
 	}
-
-	hoffset := 0
-	for i, stopHour := range stop.Times.Hours {
-		if intOrPanic(stopHour) >= nowHour {
-			hoffset = i
-			break
-		}
+	
+	hoffset := CurrentHourIndex(nowHour, stop.Times.Hours)
+	if hoffset == -1 {
+		return BeyondSchedule
 	}
-
+	
 	moffset := 0
 	minHelper := func(mins []string, cmpMin int) int {
 		if len(mins) == 0 {
+			return -1
 		}
 		
 		for j, stopMinute := range mins {
-			stopMinuteInt := 0
 			tmp := strings.TrimFunc(stopMinute, filterLetters)
-			if len(tmp) != 0 {
-				stopMinuteInt = intOrPanic(tmp)
-			} else {
+			if len(tmp) == 0 {
 				continue
 			}
 			
-			if stopMinuteInt >= cmpMin {
+			if IntOrPanic(tmp) >= cmpMin {
 				return j
 			}
 		}
@@ -200,31 +216,22 @@ func MinsToNextBus(stop Stop) (result int) {
 		return -1
 	}
 
-	var lookupMins []string
-	switch nowDay := now.Weekday(); nowDay {
-	case time.Sunday:
-		lookupMins = stop.Times.HolidayMins
-	case time.Saturday:
-		lookupMins = stop.Times.SaturdayMins
-	default:
-		lookupMins = stop.Times.WorkMins
-	}
+	lookupMins := TodaysMins(now, stop.Times)
 
 	cmp := nowMin
-	for i := hoffset; i < stopHoursCount; i++ {
-		if len(lookupMins) != 0 {
-			res := minHelper(strings.Split(lookupMins[hoffset], " "), cmp)
-			if res != -1 {
-				moffset = res
-				break
-			}
-		} else {
+	for ; hoffset < stopHoursCount; hoffset++ {
+		if len(lookupMins) == 0 {
 			// Doesn't drive on work days
 			return NotWorkDays
 		}
+		
+		res := minHelper(strings.Split(lookupMins[hoffset], " "), cmp)
+		if res != -1 {
+			moffset = res
+			break
+		}
 
 		cmp = 0
-		hoffset += 1
 	}
 
 	if hoffset == len(stop.Times.Hours) {
@@ -233,9 +240,9 @@ func MinsToNextBus(stop Stop) (result int) {
 		return BeyondSchedule
 	}
 	
-	reshour := intOrPanic(stop.Times.Hours[hoffset])
+	reshour := IntOrPanic(stop.Times.Hours[hoffset])
 	tmp := strings.Split(lookupMins[hoffset], " ")[moffset]
-	resmins := intOrPanic(strings.TrimFunc(tmp, filterLetters))
+	resmins := IntOrPanic(strings.TrimFunc(tmp, filterLetters))
 	
 	return (reshour - nowHour) * 60 + resmins - nowMin
 }
