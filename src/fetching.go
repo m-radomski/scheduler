@@ -37,6 +37,12 @@ type Database struct {
 
 var dbPath string = CreateDatabasePath()
 
+func NewDatabase() Database {
+	return Database {
+		Complete: false,
+	}
+}
+
 func CreateDatabasePath() string {
 	path, exists := os.LookupEnv("XDG_DATA_HOME")
 	if exists {
@@ -69,7 +75,33 @@ func ReadJson() {
 	for len(globalDB.Stops) < 100 {
 		time.Sleep(time.Millisecond)
 	}
+	
+	go UpdateUncompleteTable()
 }
+
+func RefreshJson() {
+	globalDB = NewDatabase()
+	err := DatabaseFromWeb()
+	if err != nil {
+		panic(err)
+	}
+
+	b, err := ioutil.ReadFile(dbPath)
+	if err != nil {
+		panic(err)
+	}
+
+	go ConcurJSONDec(bytes.NewReader(b))
+	
+	// TODO(radomski): Make the displaying real time, so the stops would appear as they are read in
+	// Wait for at least 100 connections so we have something to display
+	for len(globalDB.Stops) < 100 {
+		time.Sleep(time.Millisecond)
+	}
+	
+	go UpdateUncompleteTable()
+}	
+
 
 func ConcurJSONDec(reader io.Reader) {
 	dec := json.NewDecoder(reader)

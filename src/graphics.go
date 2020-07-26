@@ -180,12 +180,16 @@ func (view *Viewable) CreatePages() {
 
 func (view *Viewable) InitChangingFocus() {
 	app.SetInputCapture(func (event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyCtrlR {
+			RefreshJson()
+		}
+		
 		if name, _ := view.Pages.GetFrontPage(); name != "search" {
 			return event
 		}
 
 		if event.Key() == tcell.KeyCtrlSpace {
-			view .Search.FocusNext()
+			view.Search.FocusNext()
 		}
 
 		return event

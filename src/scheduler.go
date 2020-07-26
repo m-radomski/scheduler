@@ -13,7 +13,7 @@ import (
 var (
 	app *tview.Application = tview.NewApplication()
 	viewable Viewable
-	globalDB Database
+	globalDB Database = NewDatabase()
 )
 
 func FindInStops(stops []Stop, s string) (ret []Stop) {
@@ -193,7 +193,6 @@ func UpdateUncompleteTable() {
 
 func Run() {
 	ReadJson()
-	go UpdateUncompleteTable()
 
 	viewable.CreatePages()
 	if err := app.SetRoot(viewable.Pages, true).EnableMouse(true).Run(); err != nil {
