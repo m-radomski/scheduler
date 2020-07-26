@@ -194,22 +194,8 @@ func UpdateUncompleteTable() {
 func Run() {
 	ReadJson()
 	go UpdateUncompleteTable()
-	
-	showTimes := func(times Times) {
-		viewable.RefreshTimesTable(times)
-		viewable.Pages.SwitchToPage("times")
-	}
 
-	backToSearch := func() {
-		viewable.Pages.SwitchToPage("search")
-	}
-
-	viewable.Pages = tview.NewPages()
-	name, primi := CreateTimesPage(backToSearch)
-	viewable.Pages.AddPage(name, primi, true, false)
-	name, primi = CreateSearchPage(showTimes)
-	viewable.Pages.AddPage(name, primi, true, true)
-
+	viewable.CreatePages()
 	if err := app.SetRoot(viewable.Pages, true).EnableMouse(true).Run(); err != nil {
 		panic(err)
 	}

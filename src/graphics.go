@@ -89,7 +89,7 @@ func CreateSearchInputFlex(refreshTable func(stops []Stop)) (input *tview.Flex) 
 	return
 }
 
-func CreateSearchPage(showTimes func(times Times)) (title string, content tview.Primitive) {
+func CreateSearchPage() (title string, content tview.Primitive) {
 	viewable.Search.Table = tview.NewTable()
 
 	tableFromArray := func(stops []Stop) {
@@ -126,7 +126,8 @@ func CreateSearchPage(showTimes func(times Times)) (title string, content tview.
 			SetTitleAlign(tview.AlignCenter)
 		viewable.Search.Table.SetSelectedFunc(func(row, _ int) {
 			if row != 0 {
-				showTimes(stops[row - 1].Times)
+				viewable.RefreshTimesTable(stops[row - 1].Times)
+				viewable.Pages.SwitchToPage("times")
 			}
 		})
 
@@ -145,16 +146,26 @@ func CreateSearchPage(showTimes func(times Times)) (title string, content tview.
 		0, 1, true)
 }
 
-func CreateTimesPage(searchAgain func()) (title string, content tview.Primitive) {
+func CreateTimesPage() (title string, content tview.Primitive) {
 	viewable.Times = tview.NewTable()
 
 	viewable.Times.SetSelectable(true, true).SetSeparator(tview.Borders.Vertical)	
 	viewable.Times.SetBorder(true).SetTitle("Departures/Arrivals").SetTitleAlign(tview.AlignCenter)
 	viewable.Times.SetDoneFunc(func (key tcell.Key) {
-		searchAgain()
+		viewable.Pages.SwitchToPage("search")
 	})
 	
 	return "times", Center(80, 25, viewable.Times)
+}
+
+func (view *Viewable) CreatePages() {
+	view.Pages = tview.NewPages()
+	
+	name, primi := CreateTimesPage()
+	view.Pages.AddPage(name, primi, true, false)
+	
+	name, primi = CreateSearchPage()
+	view.Pages.AddPage(name, primi, true, true)
 }
 
 func (view *Viewable) RefreshTimesTable(times Times) {
