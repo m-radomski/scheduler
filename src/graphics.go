@@ -8,10 +8,19 @@ import (
 	"github.com/rivo/tview"
 )
 
+type SearchFocused int
+
+const (
+	ConnectionFocused SearchFocused = iota
+	FuzzyFocused
+	TableFocused
+)
+
 type SearchViewable struct {
 	Table *tview.Table
 	Connection *tview.Form
 	Fuzzy *tview.Form
+	CurrentFocus SearchFocused
 }
 
 type Viewable struct {
@@ -166,6 +175,35 @@ func (view *Viewable) CreatePages() {
 	
 	name, primi = CreateSearchPage()
 	view.Pages.AddPage(name, primi, true, true)
+	view.InitChangingFocus()
+}
+
+func (view *Viewable) InitChangingFocus() {
+	app.SetInputCapture(func (event *tcell.EventKey) *tcell.EventKey {
+		if name, _ := view.Pages.GetFrontPage(); name != "search" {
+			return event
+		}
+
+		if event.Key() == tcell.KeyCtrlSpace {
+			view .Search.FocusNext()
+		}
+
+		return event
+	})	
+}
+
+func (searchView *SearchViewable) FocusNext() {
+	switch searchView.CurrentFocus {
+	case ConnectionFocused:
+		app.SetFocus(searchView.Fuzzy)
+		searchView.CurrentFocus += 1
+	case FuzzyFocused:
+		app.SetFocus(searchView.Table)
+		searchView.CurrentFocus += 1
+	case TableFocused:		
+		app.SetFocus(searchView.Connection)
+		searchView.CurrentFocus = ConnectionFocused
+	}
 }
 
 func (view *Viewable) RefreshTimesTable(times Times) {
