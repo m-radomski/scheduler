@@ -195,9 +195,8 @@ func Run() {
 	ReadJson()
 	go UpdateUncompleteTable()
 	
-	refresh := func(times Times) {}
 	showTimes := func(times Times) {
-		refresh(times)
+		viewable.RefreshTimesTable(times)
 		viewable.Pages.SwitchToPage("times")
 	}
 
@@ -206,7 +205,7 @@ func Run() {
 	}
 
 	viewable.Pages = tview.NewPages()
-	name, primi, refresh := CreateTimesPage(backToSearch)
+	name, primi := CreateTimesPage(backToSearch)
 	viewable.Pages.AddPage(name, primi, true, false)
 	name, primi = CreateSearchPage(showTimes)
 	viewable.Pages.AddPage(name, primi, true, true)

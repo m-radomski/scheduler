@@ -19,6 +19,7 @@ type Viewable struct {
 	Times *tview.Table
 	Search SearchViewable
 }
+
 func Center(width, height int, p tview.Primitive) tview.Primitive {
 	return tview.NewFlex().
 		AddItem(tview.NewBox(), 0, 1, false).
@@ -144,9 +145,21 @@ func CreateSearchPage(showTimes func(times Times)) (title string, content tview.
 		0, 1, true)
 }
 
-func CreateTimesPage(searchAgain func()) (title string, content tview.Primitive, refresh func(times Times)) {
+func CreateTimesPage(searchAgain func()) (title string, content tview.Primitive) {
 	viewable.Times = tview.NewTable()
 
+	viewable.Times.SetSelectable(true, true).SetSeparator(tview.Borders.Vertical)	
+	viewable.Times.SetBorder(true).SetTitle("Departures/Arrivals").SetTitleAlign(tview.AlignCenter)
+	viewable.Times.SetDoneFunc(func (key tcell.Key) {
+		searchAgain()
+	})
+	
+	return "times", Center(80, 25, viewable.Times)
+}
+
+func (view *Viewable) RefreshTimesTable(times Times) {
+	view.Times.Clear()
+	
 	minsOrEmpty := func(mins []string, i int) (result string) {
 		result = ""
 		if len(mins) != 0 {
@@ -156,41 +169,30 @@ func CreateTimesPage(searchAgain func()) (title string, content tview.Primitive,
 		return
 	}
 
-	refresh = func(times Times) {
-		viewable.Times.Clear()
-		viewable.Times.SetSelectable(true, true).SetSeparator(tview.Borders.Vertical)
-
-		headers := "Hour;Work Day;Saturday;Holiday"
-		for c, header := range strings.Split(headers, ";") {
-			cell := tview.NewTableCell(header).SetAlign(tview.AlignCenter).SetExpansion(1)
-			viewable.Times.SetCell(0, c, cell)
-		}
-
-		for r, hour := range times.Hours {
-			cell := tview.NewTableCell(hour).SetAlign(tview.AlignRight).SetExpansion(1)
-			viewable.Times.SetCell(r + 1, 0, cell)
-
-			cell = tview.NewTableCell(minsOrEmpty(times.WorkMins, r)).
-				SetAlign(tview.AlignLeft).
-				SetExpansion(1)
-			viewable.Times.SetCell(r + 1, 1, cell)
-			
-			cell = tview.NewTableCell(minsOrEmpty(times.SaturdayMins, r)).
-				SetAlign(tview.AlignLeft).
-				SetExpansion(1)
-			viewable.Times.SetCell(r + 1, 2, cell)
-			
-			cell = tview.NewTableCell(minsOrEmpty(times.HolidayMins, r)).
-				SetAlign(tview.AlignLeft).
-				SetExpansion(1)
-			viewable.Times.SetCell(r + 1, 3, cell)
-		}
-
-		viewable.Times.SetBorder(true).SetTitle("Departures/Arrivals").SetTitleAlign(tview.AlignCenter)
-		viewable.Times.SetDoneFunc(func (key tcell.Key) {
-			searchAgain()
-		})
+	headers := "Hour;Work Day;Saturday;Holiday"
+	for c, header := range strings.Split(headers, ";") {
+		cell := tview.NewTableCell(header).SetAlign(tview.AlignCenter).SetExpansion(1)
+		view.Times.SetCell(0, c, cell)
 	}
 
-	return "times", Center(80, 25, viewable.Times), refresh
+	for r, hour := range times.Hours {
+		cell := tview.NewTableCell(hour).SetAlign(tview.AlignRight).SetExpansion(1)
+		view.Times.SetCell(r + 1, 0, cell)
+
+		cell = tview.NewTableCell(minsOrEmpty(times.WorkMins, r)).
+			SetAlign(tview.AlignLeft).
+			SetExpansion(1)
+		view.Times.SetCell(r + 1, 1, cell)
+		
+		cell = tview.NewTableCell(minsOrEmpty(times.SaturdayMins, r)).
+			SetAlign(tview.AlignLeft).
+			SetExpansion(1)
+		view.Times.SetCell(r + 1, 2, cell)
+		
+		cell = tview.NewTableCell(minsOrEmpty(times.HolidayMins, r)).
+			SetAlign(tview.AlignLeft).
+			SetExpansion(1)
+		view.Times.SetCell(r + 1, 3, cell)
+	}
+
 }
