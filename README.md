@@ -19,6 +19,7 @@ In the bottom left you can search for connections between stops, while the botto
 
 To move around inside a focused window use the `Tab` key, your mouse or the arrow keys, for confirming use the `Enter` key.
 To switch focus between windows on the Search Page press `Ctrl + Space`.
+If you wish to update your database you can press `Ctrl + R`, it will download the lastest version of the schedule from the web.
 
 Once you searched for something, you are now controlling the connections list.
 Using the `Enter` key on one shows you the schedule for that particular stop, line and it's direction.
