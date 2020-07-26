@@ -17,7 +17,8 @@ The window is split into 3 main panels.
 The biggest one shows you relevant connections, which line number it's on, stop name and next departure time.
 In the bottom left you can search for connections between stops, while the bottom right allows for a fuzzy search by line number or stop name.
 
-To move around use the `Tab` key and primarily your mouse, for confirming use the `Enter` key.
+To move around inside a focused window use the `Tab` key, your mouse or the arrow keys, for confirming use the `Enter` key.
+To switch focus between windows on the Search Page press `Ctrl + Space`.
 
 Once you searched for something, you are now controlling the connections list.
 Using the `Enter` key on one shows you the schedule for that particular stop, line and it's direction.
