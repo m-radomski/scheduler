@@ -70,10 +70,8 @@ func ReadJson() {
 
 	go ConcurJSONDec(bytes.NewReader(b))
 
-	// TODO(radomski): Make the displaying real time, so the stops would appear as they are read in
-	// Wait for at least 100 connections so we have something to display
 	for len(globalDB.Stops) < 100 {
-		time.Sleep(time.Millisecond)
+	 	time.Sleep(time.Millisecond)
 	}
 	
 	go UpdateUncompleteTable()
@@ -93,8 +91,6 @@ func RefreshJson() {
 
 	go ConcurJSONDec(bytes.NewReader(b))
 	
-	// TODO(radomski): Make the displaying real time, so the stops would appear as they are read in
-	// Wait for at least 100 connections so we have something to display
 	for len(globalDB.Stops) < 100 {
 		time.Sleep(time.Millisecond)
 	}

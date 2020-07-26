@@ -176,21 +176,6 @@ func InfoNextBus(stop Stop) (result string) {
 	}
 }
 
-
-func UpdateUncompleteTable() {
-	const updateInterval = 25 * time.Millisecond
-	for !globalDB.Complete {
-		app.QueueUpdateDraw(func() {
-			viewable.Search.Table.SetTitle("Data is now being loaded")
-		})
-		time.Sleep(updateInterval)
-	}
-
-	app.QueueUpdateDraw(func() {
-		viewable.Search.Table.SetTitle("All data is now loaded")
-	})
-}
-
 func Run() {
 	ReadJson()
 

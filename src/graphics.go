@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"time"
 	"strings"
 	"strconv"
 	
@@ -98,54 +99,55 @@ func CreateSearchInputFlex(refreshTable func(stops []Stop)) (input *tview.Flex) 
 	return
 }
 
+func (searchView *SearchViewable) PopulateSearchTable(stops []Stop) {
+	searchView.Table.Clear()
+
+	headers := "Line number;Direction;Stop name;Departure in"
+	for c, header := range strings.Split(headers, ";") {
+		cell := tview.NewTableCell(header).SetAlign(tview.AlignCenter).SetExpansion(1)
+		viewable.Search.Table.SetCell(0, c, cell)
+	}
+
+	for r, stop := range stops {
+		cell := tview.NewTableCell(strconv.Itoa(stop.LineNr)).
+			SetAlign(tview.AlignCenter).SetExpansion(1)
+		viewable.Search.Table.SetCell(r + 1, 0, cell)
+
+		cell = tview.NewTableCell(stop.Direction).
+			SetAlign(tview.AlignCenter).SetExpansion(1)
+		viewable.Search.Table.SetCell(r + 1, 1, cell)
+
+		cell = tview.NewTableCell(stop.Name).
+			SetAlign(tview.AlignCenter).SetExpansion(1)
+		viewable.Search.Table.SetCell(r + 1, 2, cell)
+
+		cell = tview.NewTableCell(InfoNextBus(stop)).SetAlign(tview.AlignCenter)
+		viewable.Search.Table.SetCell(r + 1, 3, cell)
+	}
+
+
+}
+
 func CreateSearchPage() (title string, content tview.Primitive) {
 	viewable.Search.Table = tview.NewTable()
 
-	tableFromArray := func(stops []Stop) {
-		viewable.Search.Table.Clear().
-		SetFixed(1, 1).
+	viewable.Search.Table.SetFixed(1, 1).
 		SetSelectable(true, false).
 		SetSeparator(tview.Borders.Vertical)
 
-		headers := "Line number;Direction;Stop name;Departure in"
-		for c, header := range strings.Split(headers, ";") {
-			cell := tview.NewTableCell(header).SetAlign(tview.AlignCenter).SetExpansion(1)
-			viewable.Search.Table.SetCell(0, c, cell)
+	viewable.Search.Table.SetBorder(true).
+		SetTitle("Stops and their data").
+		SetTitleAlign(tview.AlignCenter)
+	viewable.Search.Table.SetSelectedFunc(func(row, _ int) {
+		if row != 0 {
+			viewable.RefreshTimesTable(globalDB.Stops[row - 1].Times)
+			viewable.Pages.SwitchToPage("times")
 		}
+	})
 
-		for r, stop := range stops {
-			cell := tview.NewTableCell(strconv.Itoa(stop.LineNr)).
-			SetAlign(tview.AlignCenter).SetExpansion(1)
-			viewable.Search.Table.SetCell(r + 1, 0, cell)
+	viewable.Search.PopulateSearchTable(globalDB.Stops)
 
-			cell = tview.NewTableCell(stop.Direction).
-			SetAlign(tview.AlignCenter).SetExpansion(1)
-			viewable.Search.Table.SetCell(r + 1, 1, cell)
-
-			cell = tview.NewTableCell(stop.Name).
-			SetAlign(tview.AlignCenter).SetExpansion(1)
-			viewable.Search.Table.SetCell(r + 1, 2, cell)
-
-			cell = tview.NewTableCell(InfoNextBus(stop)).SetAlign(tview.AlignCenter)
-			viewable.Search.Table.SetCell(r + 1, 3, cell)
-		}
-
-		viewable.Search.Table.SetBorder(true).
-			SetTitle("Stops and their data").
-			SetTitleAlign(tview.AlignCenter)
-		viewable.Search.Table.SetSelectedFunc(func(row, _ int) {
-			if row != 0 {
-				viewable.RefreshTimesTable(stops[row - 1].Times)
-				viewable.Pages.SwitchToPage("times")
-			}
-		})
-
-		//	app.SetFocus(viewable.Search.Table)
-	}
-
-	tableFromArray(globalDB.Stops)
-
-	input := CreateSearchInputFlex(tableFromArray)
+	input := CreateSearchInputFlex(viewable.Search.PopulateSearchTable)
 
 	return "search", tview.NewFlex().
 		AddItem(tview.NewFlex().
@@ -248,4 +250,19 @@ func (view *Viewable) RefreshTimesTable(times Times) {
 		view.Times.SetCell(r + 1, 3, cell)
 	}
 
+}
+
+func UpdateUncompleteTable() {
+	const updateInterval = 25 * time.Millisecond
+	for !globalDB.Complete {
+		app.QueueUpdateDraw(func() {
+			viewable.Search.Table.SetTitle("Data is now being loaded")
+			viewable.Search.PopulateSearchTable(globalDB.Stops)
+		})
+		time.Sleep(updateInterval)
+	}
+
+	app.QueueUpdateDraw(func() {
+		viewable.Search.Table.SetTitle("All data is now loaded")
+	})
 }
