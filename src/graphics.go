@@ -41,14 +41,14 @@ func Center(width, height int, p tview.Primitive) tview.Primitive {
 		AddItem(tview.NewBox(), 0, 1, false)
 }
 
-func CreateSearchInputFlex() (input *tview.Flex) {
-	viewable.Search.Connection = tview.NewForm()
-	viewable.Search.Fuzzy = tview.NewForm()
+func (searchView *SearchViewable)CreateSearchInputFlex() (input *tview.Flex) {
+	searchView.Connection = tview.NewForm()
+	searchView.Fuzzy = tview.NewForm()
 	input = tview.NewFlex()
 	
 	showConnectionResults := func(from, to string) {
 		nstops := FindConnections(from, to, globalDB.Stops)
-		viewable.Search.PopulateConnectionsTable(nstops)
+		searchView.PopulateConnectionsTable(nstops)
 	}
 
 	from := ""
@@ -70,7 +70,7 @@ func CreateSearchInputFlex() (input *tview.Flex) {
 	fuzzyTerm := ""
 	showFuzzyResults := func() {
 		nstops := FindInStops(globalDB.Stops, fuzzyTerm)
-		viewable.Search.PopulateSearchTable(nstops)
+		searchView.PopulateSearchTable(nstops)
 	}
 	
 	captureFuzzy := func(text string) {
@@ -78,23 +78,23 @@ func CreateSearchInputFlex() (input *tview.Flex) {
 		showFuzzyResults()
 	}
 
-	viewable.Search.Connection.
+	searchView.Connection.
 	AddInputField("From", "", 20, nil, captureFrom).
 	AddInputField("To", "", 20, nil, captureTo)
 
-	viewable.Search.Fuzzy.
+	searchView.Fuzzy.
 	AddInputField("Fuzzy search for", "", 20, nil, captureFuzzy)
 
-	viewable.Search.Connection.SetBorder(true).
+	searchView.Connection.SetBorder(true).
 		SetTitle("Connection form").
 		SetTitleAlign(tview.AlignLeft)
-	viewable.Search.Fuzzy.SetBorder(true).
+	searchView.Fuzzy.SetBorder(true).
 		SetTitle("Fuzzy form").
 		SetTitleAlign(tview.AlignLeft)
 
 	input.
-	AddItem(viewable.Search.Connection, 0, 1, true).
-	AddItem(viewable.Search.Fuzzy, 0, 1, true)
+	AddItem(searchView.Connection, 0, 1, true).
+	AddItem(searchView.Fuzzy, 0, 1, true)
 
 	return
 }
@@ -105,24 +105,24 @@ func (searchView *SearchViewable) PopulateSearchTable(stops []Stop) {
 	headers := "Line number;Direction;Stop name;Departure in"
 	for c, header := range strings.Split(headers, ";") {
 		cell := tview.NewTableCell(header).SetAlign(tview.AlignCenter).SetExpansion(1)
-		viewable.Search.Table.SetCell(0, c, cell)
+		searchView.Table.SetCell(0, c, cell)
 	}
 
 	for r, stop := range stops {
 		cell := tview.NewTableCell(strconv.Itoa(stop.LineNr)).
 			SetAlign(tview.AlignCenter).SetExpansion(1)
-		viewable.Search.Table.SetCell(r + 1, 0, cell)
+		searchView.Table.SetCell(r + 1, 0, cell)
 
 		cell = tview.NewTableCell(stop.Direction).
 			SetAlign(tview.AlignCenter).SetExpansion(1)
-		viewable.Search.Table.SetCell(r + 1, 1, cell)
+		searchView.Table.SetCell(r + 1, 1, cell)
 
 		cell = tview.NewTableCell(stop.Name).
 			SetAlign(tview.AlignCenter).SetExpansion(1)
-		viewable.Search.Table.SetCell(r + 1, 2, cell)
+		searchView.Table.SetCell(r + 1, 2, cell)
 
 		cell = tview.NewTableCell(InfoNextBus(stop)).SetAlign(tview.AlignCenter)
-		viewable.Search.Table.SetCell(r + 1, 3, cell)
+		searchView.Table.SetCell(r + 1, 3, cell)
 	}
 }
 
@@ -132,76 +132,76 @@ func (searchView *SearchViewable) PopulateConnectionsTable(connections []Connect
 	headers := "Line number;Direction;Stop name;Departure in"
 	for c, header := range strings.Split(headers, ";") {
 		cell := tview.NewTableCell(header).SetAlign(tview.AlignCenter).SetExpansion(1)
-		viewable.Search.Table.SetCell(0, c, cell)
+		searchView.Table.SetCell(0, c, cell)
 	}
 
 	for r, connection := range connections {
 		cell := tview.NewTableCell(connection.LineNr).
 			SetAlign(tview.AlignCenter).SetExpansion(1)
-		viewable.Search.Table.SetCell(r + 1, 0, cell)
+		searchView.Table.SetCell(r + 1, 0, cell)
 
 		cell = tview.NewTableCell(connection.Direction).
 			SetAlign(tview.AlignCenter).SetExpansion(1)
-		viewable.Search.Table.SetCell(r + 1, 1, cell)
+		searchView.Table.SetCell(r + 1, 1, cell)
 
 		cell = tview.NewTableCell(connection.StopName).
 			SetAlign(tview.AlignCenter).SetExpansion(1)
-		viewable.Search.Table.SetCell(r + 1, 2, cell)
+		searchView.Table.SetCell(r + 1, 2, cell)
 
 		cell = tview.NewTableCell(connection.MinutesUntilNext).
 			SetAlign(tview.AlignCenter).SetExpansion(1)
-		viewable.Search.Table.SetCell(r + 1, 3, cell)
+		searchView.Table.SetCell(r + 1, 3, cell)
 	}	
 }
 
-func CreateSearchPage() (title string, content tview.Primitive) {
-	viewable.Search.Table = tview.NewTable()
+func (view *Viewable) CreateSearchPage() (title string, content tview.Primitive) {
+	view.Search.Table = tview.NewTable()
 
-	viewable.Search.Table.SetFixed(1, 1).
+	view.Search.Table.SetFixed(1, 1).
 		SetSelectable(true, false).
 		SetSeparator(tview.Borders.Vertical)
 
-	viewable.Search.Table.SetBorder(true).
+	view.Search.Table.SetBorder(true).
 		SetTitle("Stops and their data").
 		SetTitleAlign(tview.AlignCenter)
-	viewable.Search.Table.SetSelectedFunc(func(row, _ int) {
+	view.Search.Table.SetSelectedFunc(func(row, _ int) {
 		if row != 0 {
-			viewable.RefreshTimesTable(globalDB.Stops[row - 1].Times)
-			viewable.Pages.SwitchToPage("times")
+			view.RefreshTimesTable(globalDB.Stops[row - 1].Times)
+			view.Pages.SwitchToPage("times")
 		}
 	})
 
-	viewable.Search.PopulateSearchTable(globalDB.Stops)
+	view.Search.PopulateSearchTable(globalDB.Stops)
 
-	input := CreateSearchInputFlex()
+	input := view.Search.CreateSearchInputFlex()
 
 	return "search", tview.NewFlex().
 		AddItem(tview.NewFlex().
 			SetDirection(tview.FlexRow).
-			AddItem(viewable.Search.Table, 0, 1, false).
+			AddItem(view.Search.Table, 0, 1, false).
 			AddItem(input, 9, 0, true),
 		0, 1, true)
 }
 
-func CreateTimesPage() (title string, content tview.Primitive) {
-	viewable.Times = tview.NewTable()
+func (view *Viewable) CreateTimesPage() (title string, content tview.Primitive) {
+	view.Times = tview.NewTable()
 
-	viewable.Times.SetSelectable(true, true).SetSeparator(tview.Borders.Vertical)	
-	viewable.Times.SetBorder(true).SetTitle("Departures/Arrivals").SetTitleAlign(tview.AlignCenter)
-	viewable.Times.SetDoneFunc(func (key tcell.Key) {
-		viewable.Pages.SwitchToPage("search")
+	view.Times.SetSelectable(true, true).SetSeparator(tview.Borders.Vertical)	
+	view.Times.SetBorder(true).SetTitle("Departures/Arrivals").SetTitleAlign(tview.AlignCenter)
+	view.Times.SetDoneFunc(func (key tcell.Key) {
+		view.Pages.SwitchToPage("search")
 	})
 	
-	return "times", Center(80, 25, viewable.Times)
+	return "times", Center(80, 25, view.Times)
 }
 
 func (view *Viewable) CreatePages() {
 	view.Pages = tview.NewPages()
 	
-	name, primi := CreateTimesPage()
+	name, primi := view.CreateTimesPage()
 	view.Pages.AddPage(name, primi, true, false)
 	
-	name, primi = CreateSearchPage()
+	name, primi = view.CreateSearchPage()
 	view.Pages.AddPage(name, primi, true, true)
 	view.InitChangingFocus()
 }
@@ -278,6 +278,11 @@ func (view *Viewable) RefreshTimesTable(times Times) {
 
 }
 
+// For corectness sake this is not good because it's the only place where we use
+// the globaly defined `viewable` object. In order to replace it I would need some
+// way of handling events or a functions that just waits for something to happen and
+// then does something which seems unpractical or even slow. Let's just leave it
+// like it is, hoping it won't bite us
 func UpdateUncompleteTable() {
 	const updateInterval = 25 * time.Millisecond
 	for !globalDB.Complete {
