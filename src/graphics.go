@@ -41,14 +41,14 @@ func Center(width, height int, p tview.Primitive) tview.Primitive {
 		AddItem(tview.NewBox(), 0, 1, false)
 }
 
-func CreateSearchInputFlex(refreshTable func(stops []Stop)) (input *tview.Flex) {
+func CreateSearchInputFlex() (input *tview.Flex) {
 	viewable.Search.Connection = tview.NewForm()
 	viewable.Search.Fuzzy = tview.NewForm()
 	input = tview.NewFlex()
 	
 	showConnectionResults := func(from, to string) {
 		nstops := FindConnections(from, to, globalDB.Stops)
-		refreshTable(nstops)
+		viewable.Search.PopulateConnectionsTable(nstops)
 	}
 
 	from := ""
@@ -70,7 +70,7 @@ func CreateSearchInputFlex(refreshTable func(stops []Stop)) (input *tview.Flex) 
 	fuzzyTerm := ""
 	showFuzzyResults := func() {
 		nstops := FindInStops(globalDB.Stops, fuzzyTerm)
-		refreshTable(nstops)
+		viewable.Search.PopulateSearchTable(nstops)
 	}
 	
 	captureFuzzy := func(text string) {
@@ -124,8 +124,34 @@ func (searchView *SearchViewable) PopulateSearchTable(stops []Stop) {
 		cell = tview.NewTableCell(InfoNextBus(stop)).SetAlign(tview.AlignCenter)
 		viewable.Search.Table.SetCell(r + 1, 3, cell)
 	}
+}
 
+func (searchView *SearchViewable) PopulateConnectionsTable(connections []Connection) {
+	searchView.Table.Clear()
 
+	headers := "Line number;Direction;Stop name;Departure in"
+	for c, header := range strings.Split(headers, ";") {
+		cell := tview.NewTableCell(header).SetAlign(tview.AlignCenter).SetExpansion(1)
+		viewable.Search.Table.SetCell(0, c, cell)
+	}
+
+	for r, connection := range connections {
+		cell := tview.NewTableCell(connection.LineNr).
+			SetAlign(tview.AlignCenter).SetExpansion(1)
+		viewable.Search.Table.SetCell(r + 1, 0, cell)
+
+		cell = tview.NewTableCell(connection.Direction).
+			SetAlign(tview.AlignCenter).SetExpansion(1)
+		viewable.Search.Table.SetCell(r + 1, 1, cell)
+
+		cell = tview.NewTableCell(connection.StopName).
+			SetAlign(tview.AlignCenter).SetExpansion(1)
+		viewable.Search.Table.SetCell(r + 1, 2, cell)
+
+		cell = tview.NewTableCell(connection.MinutesUntilNext).
+			SetAlign(tview.AlignCenter).SetExpansion(1)
+		viewable.Search.Table.SetCell(r + 1, 3, cell)
+	}	
 }
 
 func CreateSearchPage() (title string, content tview.Primitive) {
@@ -147,7 +173,7 @@ func CreateSearchPage() (title string, content tview.Primitive) {
 
 	viewable.Search.PopulateSearchTable(globalDB.Stops)
 
-	input := CreateSearchInputFlex(viewable.Search.PopulateSearchTable)
+	input := CreateSearchInputFlex()
 
 	return "search", tview.NewFlex().
 		AddItem(tview.NewFlex().

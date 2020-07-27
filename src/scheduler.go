@@ -16,6 +16,10 @@ var (
 	globalDB Database = NewDatabase()
 )
 
+type Connection struct {
+	LineNr, Direction, StopName, MinutesUntilNext string
+}
+
 func FindInStops(stops []Stop, s string) (ret []Stop) {
 	for _, stop := range stops {
 		if strings.Contains(stop.Name, s) || strings.Contains(strconv.Itoa(stop.LineNr), s) {
@@ -25,7 +29,7 @@ func FindInStops(stops []Stop, s string) (ret []Stop) {
 	return
 }
 
-func FindConnections(from, to string, stops []Stop) (ret []Stop) {
+func FindConnections(from, to string, stops []Stop) (ret []Connection) {
 	filter := func(main, substr string) bool {
 		const treshold float64 = 0.9
 		return IsFuzzyEqualInsens(main, substr, treshold) || // Case Insesitive
@@ -42,7 +46,13 @@ func FindConnections(from, to string, stops []Stop) (ret []Stop) {
 				if line == stops[j].LineNr && dir == stops[j].Direction &&
 					// to == stops[j].Name { // use this for exact matching
 					filter(stops[j].Name, to) {
-					ret = append(ret, stops[i])
+						connection := Connection {
+							LineNr: strconv.Itoa(stops[j].LineNr),
+							Direction: stops[i].Name + " -> " + stops[j].Name,
+							StopName: stops[i].Name,
+							MinutesUntilNext: InfoNextBus(stops[i]),
+						}
+					ret = append(ret, connection)
 				} else if line != stops[j].LineNr || dir != stops[j].Direction {
 					i += j - 1 - i // skip this many stops, because the are on the same route
 					break
