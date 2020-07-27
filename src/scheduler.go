@@ -184,7 +184,11 @@ func InfoNextBus(stop Stop) (result string) {
 	case NotWorkDays:
 		return "Doesn't drive today"
 	default:
-		return fmt.Sprintln("Next in", minNext, "min")
+		if minNext != 0 {
+			return fmt.Sprintln("Next in", minNext, "min")			
+		} else {
+			return fmt.Sprintln("Departing right now!")
+		}
 	}
 }
 
