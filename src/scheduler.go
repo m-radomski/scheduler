@@ -17,7 +17,7 @@ var (
 )
 
 type Connection struct {
-	LineNr, Direction, StopName, MinutesUntilNext string
+	LineNr, Direction, CommuteLength, MinutesUntilNext string
 }
 
 func FindInStops(stops []Stop, s string) (ret []Stop) {
@@ -51,7 +51,7 @@ func FindConnections(from, to string, stops []Stop) (ret []Connection) {
 						connection := Connection {
 							LineNr: strconv.Itoa(stops[j].LineNr),
 							Direction: stops[i].Name + " -> " + stops[j].Name,
-							StopName: stops[i].Name,
+							CommuteLength: "nothing yet",
 							MinutesUntilNext: InfoNextBus(stops[i]),
 						}
 					ret = append(ret, connection)

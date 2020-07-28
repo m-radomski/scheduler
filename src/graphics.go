@@ -129,7 +129,7 @@ func (searchView *SearchViewable) PopulateSearchTable(stops []Stop) {
 func (searchView *SearchViewable) PopulateConnectionsTable(connections []Connection) {
 	searchView.Table.Clear()
 
-	headers := "Line number;Direction;Stop name;Departure in"
+	headers := "Line number;Direction;Commute length;Departure in"
 	for c, header := range strings.Split(headers, ";") {
 		cell := tview.NewTableCell(header).SetAlign(tview.AlignCenter).SetExpansion(1)
 		searchView.Table.SetCell(0, c, cell)
@@ -144,7 +144,7 @@ func (searchView *SearchViewable) PopulateConnectionsTable(connections []Connect
 			SetAlign(tview.AlignCenter).SetExpansion(1)
 		searchView.Table.SetCell(r + 1, 1, cell)
 
-		cell = tview.NewTableCell(connection.StopName).
+		cell = tview.NewTableCell(connection.CommuteLength).
 			SetAlign(tview.AlignCenter).SetExpansion(1)
 		searchView.Table.SetCell(r + 1, 2, cell)
 
