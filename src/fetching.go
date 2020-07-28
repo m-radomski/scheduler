@@ -24,6 +24,7 @@ type Times struct {
 }
 
 type Stop struct {
+	Id int `json:"id"`
 	LineNr int `json:"line"`
 	Direction string `json:"direction"`
 	Name string `json:"stop_name"`
