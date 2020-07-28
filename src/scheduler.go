@@ -116,13 +116,23 @@ func MinsToNextBus(stop Stop) (result int) {
 		return unicode.IsLetter(r)
 	}
 
-	// TODO(radomski): Each hour after 23 should be increased by 24
 	// Check if we even fit into todays schedule
 	stopHoursCount := len(stop.Times.Hours)
+
+	// Map all hours after 23 to their equivalent of 24 time, we go even outside of the bounds eg. 25 hour
+	// This is until we get a normal time diff function
+	first := 0
+	for i := 0; i < len(stop.Times.Hours) - 1; i++ {
+			if IntOrPanic(stop.Times.Hours[i]) == 23 && IntOrPanic(stop.Times.Hours[i + 1]) == 0 {
+				first = i + 1
+				for j := 0; j < len(stop.Times.Hours[first:]); j++ {
+					stop.Times.Hours[j + first] = strconv.Itoa((IntOrPanic(stop.Times.Hours[j + first]) + 24))
+				}
+				break
+			}
+		}
+
 	latest := IntOrPanic(stop.Times.Hours[stopHoursCount - 1])
-	if latest == 0 {
-		latest += 24
-	}
 
 	if nowHour > latest {
 		// We are no longer in todays schedule
