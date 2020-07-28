@@ -152,49 +152,15 @@ func TodaysMins(now time.Time, mins Times) []string {
 }
 
 func MinsToNextBus(stop Stop) (result int) {
-	now := time.Now()
-	nowHour, nowMin, _ := now.Clock()
-
-	filterLetters := func(r rune) bool {
-		return unicode.IsLetter(r)
-	}
-
-	// Check if we even fit into todays schedule
-	stopHoursCount := len(stop.Times.Hours)
-
-	// Map all hours after 23 to their equivalent of 24 time, we go even outside of the bounds eg. 25 hour
-	// This is until we get a normal time diff function
-	first := 0
-	for i := 0; i < len(stop.Times.Hours) - 1; i++ {
-			if IntOrPanic(stop.Times.Hours[i]) == 23 && IntOrPanic(stop.Times.Hours[i + 1]) == 0 {
-				first = i + 1
-				for j := 0; j < len(stop.Times.Hours[first:]); j++ {
-					stop.Times.Hours[j + first] = strconv.Itoa((IntOrPanic(stop.Times.Hours[j + first]) + 24))
-				}
-				break
-			}
-		}
-
-	latest := IntOrPanic(stop.Times.Hours[stopHoursCount - 1])
-
-	if nowHour > latest {
-		// We are no longer in todays schedule
-		return BeyondSchedule
-	}
-	
-	hoffset := CurrentHourIndex(nowHour, stop.Times.Hours)
-	if hoffset == -1 {
-		return BeyondSchedule
-	}
-	
-	moffset := 0
 	minHelper := func(mins []string, cmpMin int) int {
 		if len(mins) == 0 {
 			return -1
 		}
 		
 		for j, stopMinute := range mins {
-			tmp := strings.TrimFunc(stopMinute, filterLetters)
+			tmp := strings.TrimFunc(stopMinute, func(r rune) bool {
+				return unicode.IsLetter(r)
+			})
 			if len(tmp) == 0 {
 				continue
 			}
@@ -207,33 +173,46 @@ func MinsToNextBus(stop Stop) (result int) {
 		return -1
 	}
 
-	lookupMins := TodaysMins(now, stop.Times)
+	getConcreteTimeIndexs := func(currentHour, currentMin int, workingMins, workingHours []string) (hi, mi int) {
+		hi = CurrentHourIndex(currentHour, workingHours)
+		if hi == -1 {
+			return BeyondSchedule, 0
+		}
 
-	cmp := nowMin
-	for ; hoffset < stopHoursCount; hoffset++ {
-		if len(lookupMins) == 0 {
-			// Doesn't drive on work days
-			return NotWorkDays
+		if len(workingMins) == 0 {
+			// Doesn't drive on today's type of day
+			return NotWorkDays, 0
 		}
 		
-		res := minHelper(strings.Split(lookupMins[hoffset], " "), cmp)
-		if res != -1 {
-			moffset = res
-			break
+		for ; hi < len(workingHours); hi++ {
+			mi = minHelper(strings.Split(workingMins[hi], " "), currentMin)
+			if mi == -1 {
+				currentMin = 0
+				continue
+			}
+
+			return hi, mi
 		}
 
-		cmp = 0
-	}
+		// We found the hour in this schedule but we don't fit with the minutes this time
+		return BeyondSchedule, 0
+	} 
 
-	if hoffset == len(stop.Times.Hours) {
-		// We found the hour in this schedule
-		// but we don't fit with the minutes this time
-		return BeyondSchedule
+	now := time.Now()
+	nowHour, nowMin, _ := now.Clock()
+	lookupMins := TodaysMins(now, stop.Times)
+	hoffset, moffset := getConcreteTimeIndexs(nowHour, nowMin, lookupMins, stop.Times.Hours)
+
+	// Error propagation
+	if hoffset <= BeyondSchedule {
+		return hoffset
 	}
 	
 	reshour := IntOrPanic(stop.Times.Hours[hoffset])
 	tmp := strings.Split(lookupMins[hoffset], " ")[moffset]
-	resmins := IntOrPanic(strings.TrimFunc(tmp, filterLetters))
+	resmins := IntOrPanic(strings.TrimFunc(tmp, func (r rune) bool {
+				return unicode.IsLetter(r)
+	}))
 	
 	return (reshour - nowHour) * 60 + resmins - nowMin
 }
