@@ -123,6 +123,8 @@ func ConcurJSONDec(reader io.Reader) {
 	if err != nil {
 		panic(err)
 	}
+
+	TimesToOneDay()
 }
 
 func DatabaseFromWeb() error {

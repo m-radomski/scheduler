@@ -100,6 +100,27 @@ const (
 	NotWorkDays = -2
 )
 
+func TimesToOneDay() {
+	for i, stop := range globalDB.Stops {
+		for j := 0; j < len(stop.Times.Hours) - 1; j++ {
+			if IntOrPanic(stop.Times.Hours[j]) == 23 && IntOrPanic(stop.Times.Hours[j + 1]) == 0 {
+				// NOTE(radomski): This is safe
+				globalDB.Stops[i].Times.Hours = append(stop.Times.Hours[j + 1:], stop.Times.Hours[:j + 1]...)
+				// NOTE(radomski): Those are not
+				if len(stop.Times.WorkMins) != 0 {
+					globalDB.Stops[i].Times.WorkMins = append(stop.Times.WorkMins[j + 1:], stop.Times.WorkMins[:j + 1]...)
+				}
+				if len(stop.Times.SaturdayMins) != 0 {
+					globalDB.Stops[i].Times.SaturdayMins = append(stop.Times.SaturdayMins[j + 1:], stop.Times.SaturdayMins[:j + 1]...)
+				}
+				if len(stop.Times.HolidayMins) != 0 {
+					globalDB.Stops[i].Times.HolidayMins = append(stop.Times.HolidayMins[j + 1:], stop.Times.HolidayMins[:j + 1]...)
+				}
+			}
+		}
+	}
+}
+
 func IntOrPanic(str string) (result int) {
 	result, err := strconv.Atoi(str)
 	if err != nil {
