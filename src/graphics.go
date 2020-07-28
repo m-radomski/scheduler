@@ -3,7 +3,6 @@ package scheduler
 import (
 	"time"
 	"strings"
-	"strconv"
 	
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
@@ -70,7 +69,8 @@ func (searchView *SearchViewable)CreateSearchInputFlex() (input *tview.Flex) {
 	fuzzyTerm := ""
 	showFuzzyResults := func() {
 		nstops := FindInStops(globalDB.Stops, fuzzyTerm)
-		searchView.PopulateSearchTable(nstops)
+		searchEntires := SearchEntriesFromStops(nstops)
+		searchView.PopulateSearchTable(searchEntires)
 	}
 	
 	captureFuzzy := func(text string) {
@@ -99,7 +99,7 @@ func (searchView *SearchViewable)CreateSearchInputFlex() (input *tview.Flex) {
 	return
 }
 
-func (searchView *SearchViewable) PopulateSearchTable(stops []Stop) {
+func (searchView *SearchViewable) PopulateSearchTable(entires []SearchEntry) {
 	searchView.Table.Clear()
 
 	headers := "Line number;Direction;Stop name;Departure in"
@@ -108,25 +108,20 @@ func (searchView *SearchViewable) PopulateSearchTable(stops []Stop) {
 		searchView.Table.SetCell(0, c, cell)
 	}
 
-	for r, stop := range stops {
-		cell := tview.NewTableCell(strconv.Itoa(stop.LineNr)).
+	for r, entry := range entires {
+		cell := tview.NewTableCell(entry.LineNr).
 			SetAlign(tview.AlignCenter).SetExpansion(1)
 		searchView.Table.SetCell(r + 1, 0, cell)
 
-		cell = tview.NewTableCell(stop.Direction).
+		cell = tview.NewTableCell(entry.Direction).
 			SetAlign(tview.AlignCenter).SetExpansion(1)
 		searchView.Table.SetCell(r + 1, 1, cell)
 
-		cell = tview.NewTableCell(stop.Name).
+		cell = tview.NewTableCell(entry.StopName).
 			SetAlign(tview.AlignCenter).SetExpansion(1)
 		searchView.Table.SetCell(r + 1, 2, cell)
 
-		// TODO(radomski): This is an awful hack, please make it so that this function
-		// doesn't call `InfoNextBus`
-
-		letMeIn := make([]Stop, 1)
-		letMeIn[0] = stop
-		cell = tview.NewTableCell(InfoNextBus(letMeIn)).SetAlign(tview.AlignCenter)
+		cell = tview.NewTableCell(entry.InfoNext).SetAlign(tview.AlignCenter)
 		searchView.Table.SetCell(r + 1, 3, cell)
 	}
 }
@@ -172,7 +167,8 @@ func (view *Viewable) CreateSearchPage() (title string, content tview.Primitive)
 		}
 	})
 
-	view.Search.PopulateSearchTable(globalDB.Stops)
+	searchEntires := SearchEntriesFromStops(globalDB.Stops)
+	view.Search.PopulateSearchTable(searchEntires)
 
 	input := view.Search.CreateSearchInputFlex()
 
@@ -289,7 +285,8 @@ func UpdateUncompleteTable() {
 	for !globalDB.Complete {
 		app.QueueUpdateDraw(func() {
 			viewable.Search.Table.SetTitle("Data is now being loaded")
-			viewable.Search.PopulateSearchTable(globalDB.Stops)
+			searchEntires := SearchEntriesFromStops(globalDB.Stops)
+			viewable.Search.PopulateSearchTable(searchEntires)
 		})
 		time.Sleep(updateInterval)
 	}

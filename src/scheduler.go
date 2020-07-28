@@ -23,6 +23,28 @@ type Connection struct {
 	// CommuteLength, MinutesUntilNext string
 }
 
+type SearchEntry struct {
+	LineNr string
+	Direction string
+	StopName string
+	InfoNext string
+}
+
+func SearchEntriesFromStops(stops []Stop) (result []SearchEntry) {
+	for _, stop := range stops {
+		entry := SearchEntry {
+			LineNr: strconv.Itoa(stop.LineNr),
+			Direction: stop.Direction,
+			StopName: stop.Name,
+			InfoNext: InfoNextBus(stop),
+		}
+
+		result = append(result, entry)
+	}
+
+	return 
+}
+
 func FindInStops(stops []Stop, s string) (ret []Stop) {
 	for _, stop := range stops {
 		if strings.Contains(stop.Name, s) || strings.Contains(strconv.Itoa(stop.LineNr), s) {
@@ -60,7 +82,7 @@ func FindConnections(from, to string, stops []Stop) (ret []Connection) {
 						// that just returns mins until next bus and commute lenght
 						// as ints and we would transform them somewhere down the road
 						// CommuteLength: minsLength,
-						InfoNext: InfoNextBus(stops[i:j + 1]),
+						InfoNext: InfoNextBusOnConnection(stops[i:j + 1]),
 					}
 				ret = append(ret, connection)
 			} else if line != stops[j].LineNr || dir != stops[j].Direction {
@@ -199,24 +221,30 @@ func CommuteLengthFromRoute(stops []Stop) (result int) {
 	return 0
 }
 
-func InfoNextBus(stops []Stop) (result string) {
+func InfoNextBus(stop Stop) (result string) {
+	switch minNext := MinsToNextBus(stop); minNext {
+	case BeyondSchedule:
+		return "Beyond schedule"
+	case NotWorkDays:
+		return "Doesn't drive today"
+	default:
+		if minNext != 0 {
+			return fmt.Sprintf("In %d min", minNext)			
+		} else {
+			return fmt.Sprintf("Departing right now!")
+		}
+	}
+}
+
+// NOTE(radomski): Idealy this would return two strings, one being 
+// minutes until the next bus and second one being the commute length
+func InfoNextBusOnConnection(stops []Stop) (result string) {
 	switch minNext := MinsToNextBus(stops[0]); minNext {
 	case BeyondSchedule:
 		return "Beyond schedule"
 	case NotWorkDays:
 		return "Doesn't drive today"
 	default:
-
-		// TODO(radomski): Once again this is an awful hack, FIX THISSS please
-		// just create a sensible data structure for this
-		if len(stops) == 1 {
-			if minNext != 0 {
-				return fmt.Sprintf("In %d min", minNext)			
-			} else {
-				return fmt.Sprintf("Departing right now!")
-			}
-		}
-
 		commuteLength := CommuteLengthFromRoute(stops)
 		if minNext != 0 {
 			return fmt.Sprintf("In %d min [%d min ride]", minNext, commuteLength)			
