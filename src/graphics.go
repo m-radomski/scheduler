@@ -121,7 +121,12 @@ func (searchView *SearchViewable) PopulateSearchTable(stops []Stop) {
 			SetAlign(tview.AlignCenter).SetExpansion(1)
 		searchView.Table.SetCell(r + 1, 2, cell)
 
-		cell = tview.NewTableCell(InfoNextBus(stop)).SetAlign(tview.AlignCenter)
+		// TODO(radomski): This is an awful hack, please make it so that this function
+		// doesn't call `InfoNextBus`
+
+		letMeIn := make([]Stop, 1)
+		letMeIn[0] = stop
+		cell = tview.NewTableCell(InfoNextBus(letMeIn)).SetAlign(tview.AlignCenter)
 		searchView.Table.SetCell(r + 1, 3, cell)
 	}
 }
@@ -129,7 +134,7 @@ func (searchView *SearchViewable) PopulateSearchTable(stops []Stop) {
 func (searchView *SearchViewable) PopulateConnectionsTable(connections []Connection) {
 	searchView.Table.Clear()
 
-	headers := "Line number;Direction;Commute length;Departure in"
+	headers := "Line number;Direction;Departure in"
 	for c, header := range strings.Split(headers, ";") {
 		cell := tview.NewTableCell(header).SetAlign(tview.AlignCenter).SetExpansion(1)
 		searchView.Table.SetCell(0, c, cell)
@@ -144,13 +149,9 @@ func (searchView *SearchViewable) PopulateConnectionsTable(connections []Connect
 			SetAlign(tview.AlignCenter).SetExpansion(1)
 		searchView.Table.SetCell(r + 1, 1, cell)
 
-		cell = tview.NewTableCell(connection.CommuteLength).
+		cell = tview.NewTableCell(connection.InfoNext).
 			SetAlign(tview.AlignCenter).SetExpansion(1)
 		searchView.Table.SetCell(r + 1, 2, cell)
-
-		cell = tview.NewTableCell(connection.MinutesUntilNext).
-			SetAlign(tview.AlignCenter).SetExpansion(1)
-		searchView.Table.SetCell(r + 1, 3, cell)
 	}	
 }
 

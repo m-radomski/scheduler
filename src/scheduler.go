@@ -17,7 +17,10 @@ var (
 )
 
 type Connection struct {
-	LineNr, Direction, CommuteLength, MinutesUntilNext string
+	LineNr, Direction, InfoNext string
+
+	// NOTE(radomski): See comment in `FindConnections`
+	// CommuteLength, MinutesUntilNext string
 }
 
 func FindInStops(stops []Stop, s string) (ret []Stop) {
@@ -39,26 +42,30 @@ func FindConnections(from, to string, stops []Stop) (ret []Connection) {
 	}
 	
 	for i := 0; i < len(stops); i++ {
-		//		if stops[i].Name == from { // use this for exact matching
-		if filter(stops[i].Name, from) {
-			line := stops[i].LineNr
-			dir := stops[i].Direction
+		if !filter(stops[i].Name, from) {
+			continue
+		}
 
-			for j := i; j < len(stops); j++ {
-				if line == stops[j].LineNr && dir == stops[j].Direction &&
-					// to == stops[j].Name { // use this for exact matching
-					filter(stops[j].Name, to) {
-						connection := Connection {
-							LineNr: strconv.Itoa(stops[j].LineNr),
-							Direction: stops[i].Name + " -> " + stops[j].Name,
-							CommuteLength: "nothing yet",
-							MinutesUntilNext: InfoNextBus(stops[i]),
-						}
-					ret = append(ret, connection)
-				} else if line != stops[j].LineNr || dir != stops[j].Direction {
-					i += j - 1 - i // skip this many stops, because the are on the same route
-					break
-				}
+		line := stops[i].LineNr
+		dir := stops[i].Direction
+
+		for j := i; j < len(stops); j++ {
+			if line == stops[j].LineNr && dir == stops[j].Direction && filter(stops[j].Name, to) {
+					connection := Connection {
+						LineNr: strconv.Itoa(stops[j].LineNr),
+						Direction: stops[i].Name + " -> " + stops[j].Name,
+						// TODO(radomski): I don't know if we really need this
+						// But it would be nice to not be so reliant on InfoNextBus
+						// returning a formated string. Idealy we would want something
+						// that just returns mins until next bus and commute lenght
+						// as ints and we would transform them somewhere down the road
+						// CommuteLength: minsLength,
+						InfoNext: InfoNextBus(stops[i:j + 1]),
+					}
+				ret = append(ret, connection)
+			} else if line != stops[j].LineNr || dir != stops[j].Direction {
+				i += j - 1 - i // skip this many stops, because the are on the same route
+				break
 			}
 		}
 	}
@@ -109,6 +116,7 @@ func MinsToNextBus(stop Stop) (result int) {
 		return unicode.IsLetter(r)
 	}
 
+	// TODO(radomski): Each hour after 23 should be increased by 24
 	// Check if we even fit into todays schedule
 	stopHoursCount := len(stop.Times.Hours)
 	latest := IntOrPanic(stop.Times.Hours[stopHoursCount - 1])
@@ -177,17 +185,33 @@ func MinsToNextBus(stop Stop) (result int) {
 	return (reshour - nowHour) * 60 + resmins - nowMin
 }
 
-func InfoNextBus(stop Stop) (result string) {
-	switch minNext := MinsToNextBus(stop); minNext {
+func CommuteLengthFromRoute(stops []Stop) (result int) {
+	return 0
+}
+
+func InfoNextBus(stops []Stop) (result string) {
+	switch minNext := MinsToNextBus(stops[0]); minNext {
 	case BeyondSchedule:
 		return "Beyond schedule"
 	case NotWorkDays:
 		return "Doesn't drive today"
 	default:
+
+		// TODO(radomski): Once again this is an awful hack, FIX THISSS please
+		// just create a sensible data structure for this
+		if len(stops) == 1 {
+			if minNext != 0 {
+				return fmt.Sprintf("In %d min", minNext)			
+			} else {
+				return fmt.Sprintf("Departing right now!")
+			}
+		}
+
+		commuteLength := CommuteLengthFromRoute(stops)
 		if minNext != 0 {
-			return fmt.Sprintln("Next in", minNext, "min")			
+			return fmt.Sprintf("In %d min [%d min ride]", minNext, commuteLength)			
 		} else {
-			return fmt.Sprintln("Departing right now!")
+			return fmt.Sprintf("Departing right now! [%d min ride]", commuteLength)
 		}
 	}
 }
