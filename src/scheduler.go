@@ -151,57 +151,48 @@ func TodaysMins(now time.Time, mins Times) []string {
 	}
 }
 
-func MinsToNextBus(stop Stop) (result int) {
-	minHelper := func(mins []string, cmpMin int) int {
-		if len(mins) == 0 {
-			return -1
-		}
-		
-		for j, stopMinute := range mins {
-			tmp := strings.TrimFunc(stopMinute, func(r rune) bool {
-				return unicode.IsLetter(r)
-			})
-			if len(tmp) == 0 {
-				continue
-			}
-			
-			if IntOrPanic(tmp) >= cmpMin {
-				return j
-			}
-		}
-
-		return -1
+func ClosestsBusTimeIndexes(currentHour, currentMin int, workingMins, workingHours []string) (hi, mi int) {
+	hi = CurrentHourIndex(currentHour, workingHours)
+	if hi == -1 {
+		return BeyondSchedule, 0
 	}
 
-	getConcreteTimeIndexs := func(currentHour, currentMin int, workingMins, workingHours []string) (hi, mi int) {
-		hi = CurrentHourIndex(currentHour, workingHours)
-		if hi == -1 {
-			return BeyondSchedule, 0
+	if len(workingMins) == 0 {
+		// Doesn't drive on today's type of day
+		return NotWorkDays, 0
+	}
+	
+	for ; hi < len(workingHours); hi++ {
+		minsAtHour := strings.Split(workingMins[hi], " ")
+		if len(minsAtHour) == 0 {
+			currentMin = 0
+			continue
 		}
 
-		if len(workingMins) == 0 {
-			// Doesn't drive on today's type of day
-			return NotWorkDays, 0
-		}
-		
-		for ; hi < len(workingHours); hi++ {
-			mi = minHelper(strings.Split(workingMins[hi], " "), currentMin)
-			if mi == -1 {
-				currentMin = 0
+		for i, stopMinute := range minsAtHour {
+			minTrimed := strings.TrimFunc(stopMinute, func(r rune) bool {
+				return unicode.IsLetter(r)
+			})
+
+			if len(minTrimed) == 0 {
 				continue
 			}
 
-			return hi, mi
+			if IntOrPanic(minTrimed) >= currentMin {
+				return hi, i
+			}
 		}
+	}
 
-		// We found the hour in this schedule but we don't fit with the minutes this time
-		return BeyondSchedule, 0
-	} 
+	// We found the hour in this schedule but we don't fit with the minutes this time
+	return BeyondSchedule, 0
+}
 
+func MinsToNextBus(stop Stop) (result int) {
 	now := time.Now()
 	nowHour, nowMin, _ := now.Clock()
 	lookupMins := TodaysMins(now, stop.Times)
-	hoffset, moffset := getConcreteTimeIndexs(nowHour, nowMin, lookupMins, stop.Times.Hours)
+	hoffset, moffset := ClosestsBusTimeIndexes(nowHour, nowMin, lookupMins, stop.Times.Hours)
 
 	// Error propagation
 	if hoffset <= BeyondSchedule {
