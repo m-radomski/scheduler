@@ -40,13 +40,13 @@ func Center(width, height int, p tview.Primitive) tview.Primitive {
 		AddItem(tview.NewBox(), 0, 1, false)
 }
 
-func (searchView *SearchViewable)CreateSearchInputFlex() (input *tview.Flex) {
+func (searchView *SearchViewable)CreateSearchInputFlex(database *Database) (input *tview.Flex) {
 	searchView.Connection = tview.NewForm()
 	searchView.Fuzzy = tview.NewForm()
 	input = tview.NewFlex()
 	
 	showConnectionResults := func(from, to string) {
-		nstops := FindConnections(from, to, globalDB.Stops)
+		nstops := FindConnections(from, to, database.Stops)
 		searchView.PopulateConnectionsTable(nstops)
 	}
 
@@ -68,7 +68,7 @@ func (searchView *SearchViewable)CreateSearchInputFlex() (input *tview.Flex) {
 
 	fuzzyTerm := ""
 	showFuzzyResults := func() {
-		nstops := FindInStops(globalDB.Stops, fuzzyTerm)
+		nstops := FindInStops(database.Stops, fuzzyTerm)
 		searchEntires := SearchEntriesFromStops(nstops)
 		searchView.PopulateSearchTable(searchEntires)
 	}
@@ -150,7 +150,7 @@ func (searchView *SearchViewable) PopulateConnectionsTable(connections []Connect
 	}	
 }
 
-func (view *Viewable) CreateSearchPage() (title string, content tview.Primitive) {
+func (view *Viewable) CreateSearchPage(database *Database) (title string, content tview.Primitive) {
 	view.Search.Table = tview.NewTable()
 
 	view.Search.Table.SetFixed(1, 1).
@@ -162,15 +162,15 @@ func (view *Viewable) CreateSearchPage() (title string, content tview.Primitive)
 		SetTitleAlign(tview.AlignCenter)
 	view.Search.Table.SetSelectedFunc(func(row, _ int) {
 		if row != 0 {
-			view.RefreshTimesTable(globalDB.Stops[row - 1].Times)
+			view.RefreshTimesTable(database.Stops[row - 1].Times)
 			view.Pages.SwitchToPage("times")
 		}
 	})
 
-	searchEntires := SearchEntriesFromStops(globalDB.Stops)
+	searchEntires := SearchEntriesFromStops(database.Stops)
 	view.Search.PopulateSearchTable(searchEntires)
 
-	input := view.Search.CreateSearchInputFlex()
+	input := view.Search.CreateSearchInputFlex(database)
 
 	return "search", tview.NewFlex().
 		AddItem(tview.NewFlex().
@@ -192,21 +192,21 @@ func (view *Viewable) CreateTimesPage() (title string, content tview.Primitive) 
 	return "times", Center(80, 25, view.Times)
 }
 
-func (view *Viewable) CreatePages() {
+func (view *Viewable) CreatePages(database *Database) {
 	view.Pages = tview.NewPages()
 	
 	name, primi := view.CreateTimesPage()
 	view.Pages.AddPage(name, primi, true, false)
 	
-	name, primi = view.CreateSearchPage()
+	name, primi = view.CreateSearchPage(database)
 	view.Pages.AddPage(name, primi, true, true)
-	view.InitChangingFocus()
+	view.InitChangingFocus(database)
 }
 
-func (view *Viewable) InitChangingFocus() {
+func (view *Viewable) InitChangingFocus(database *Database) {
 	app.SetInputCapture(func (event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyCtrlR {
-			RefreshJson()
+			RefreshJson(database)
 		}
 		
 		if name, _ := view.Pages.GetFrontPage(); name != "search" {
@@ -280,12 +280,12 @@ func (view *Viewable) RefreshTimesTable(times Times) {
 // way of handling events or a functions that just waits for something to happen and
 // then does something which seems unpractical or even slow. Let's just leave it
 // like it is, hoping it won't bite us
-func UpdateUncompleteTable() {
+func UpdateUncompleteTable(database *Database) {
 	const updateInterval = 25 * time.Millisecond
-	for !globalDB.Complete {
+	for !database.Complete {
 		app.QueueUpdateDraw(func() {
 			viewable.Search.Table.SetTitle("Data is now being loaded")
-			searchEntires := SearchEntriesFromStops(globalDB.Stops)
+			searchEntires := SearchEntriesFromStops(database.Stops)
 			viewable.Search.PopulateSearchTable(searchEntires)
 		})
 		time.Sleep(updateInterval)

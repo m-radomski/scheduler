@@ -36,8 +36,6 @@ type Database struct {
 	Complete bool
 }
 
-var dbPath string = CreateDatabasePath()
-
 func NewDatabase() Database {
 	return Database {
 		Complete: false,
@@ -55,10 +53,13 @@ func CreateDatabasePath() string {
 	}
 }
 
-func ReadJson() {
+func DatabaseFromJSON() (result *Database) {
+	result = new(Database)
+	dbPath := CreateDatabasePath()
+	
 	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
 		fmt.Println("Missing database file, fetching it from the web")
-		err := DatabaseFromWeb()
+		err := DatabaseFromWeb(dbPath)
 		if err != nil {
 			panic(err)
 		}
@@ -69,18 +70,22 @@ func ReadJson() {
 		panic(err)
 	}
 
-	go ConcurJSONDec(bytes.NewReader(b))
+	go ConcurJSONDec(result, bytes.NewReader(b))
 
-	for len(globalDB.Stops) < 100 {
+	for len(result.Stops) < 100 {
 	 	time.Sleep(time.Millisecond)
 	}
 	
-	go UpdateUncompleteTable()
+	go UpdateUncompleteTable(result)
+
+	return 
 }
 
-func RefreshJson() {
-	globalDB = NewDatabase()
-	err := DatabaseFromWeb()
+func RefreshJson(db *Database) {
+	dbPath := CreateDatabasePath()
+	
+	*db = NewDatabase()
+	err := DatabaseFromWeb(dbPath)
 	if err != nil {
 		panic(err)
 	}
@@ -90,17 +95,17 @@ func RefreshJson() {
 		panic(err)
 	}
 
-	go ConcurJSONDec(bytes.NewReader(b))
+	go ConcurJSONDec(db, bytes.NewReader(b))
 	
-	for len(globalDB.Stops) < 100 {
+	for len(db.Stops) < 100 {
 		time.Sleep(time.Millisecond)
 	}
 	
-	go UpdateUncompleteTable()
+	go UpdateUncompleteTable(db)
 }	
 
 
-func ConcurJSONDec(reader io.Reader) {
+func ConcurJSONDec(db *Database, reader io.Reader) {
 	dec := json.NewDecoder(reader)
 	_, err := dec.Token()
 	if err != nil {
@@ -114,20 +119,20 @@ func ConcurJSONDec(reader io.Reader) {
 			panic(err)
 		}
 
-		globalDB.Stops = append(globalDB.Stops, s)
+		db.Stops = append(db.Stops, s)
 	}
 
-	globalDB.Complete = true
+	db.Complete = true
 	
 	_, err = dec.Token()
 	if err != nil {
 		panic(err)
 	}
 
-	TimesToOneDay()
+	db.Stops = TimesToOneDay(db.Stops)
 }
 
-func DatabaseFromWeb() error {
+func DatabaseFromWeb(dbPath string) error {
 	r, err := http.Get("https://mradomski.top/scheduler/latest.json.gz")
 	if err != nil {
 		return err
@@ -175,7 +180,7 @@ func FetchFTP(host, username, password string) (b *ftp.Response, err error) {
 	return r, nil
 }
 
-func DatabaseFromFTP(host, username, password string) (e error) {
+func DatabaseFromFTP(dbPath, host, username, password string) (e error) {
 	r, err := FetchFTP(host, username, password)
 	if err != nil {
 		return err

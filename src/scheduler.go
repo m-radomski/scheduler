@@ -13,7 +13,6 @@ import (
 var (
 	app *tview.Application = tview.NewApplication()
 	viewable Viewable
-	globalDB Database = NewDatabase()
 )
 
 type Connection struct {
@@ -100,25 +99,36 @@ const (
 	NotWorkDays = -2
 )
 
-func TimesToOneDay() {
-	for i, stop := range globalDB.Stops {
+func TimesToOneDay(stops []Stop) (result []Stop) {
+	for _, stop := range stops {
 		for j := 0; j < len(stop.Times.Hours) - 1; j++ {
 			if IntOrPanic(stop.Times.Hours[j]) == 23 && IntOrPanic(stop.Times.Hours[j + 1]) == 0 {
-				// NOTE(radomski): This is safe
-				globalDB.Stops[i].Times.Hours = append(stop.Times.Hours[j + 1:], stop.Times.Hours[:j + 1]...)
+				new := Times {
+					// NOTE(radomski): This is safe
+					Hours: append(stop.Times.Hours[j + 1:], stop.Times.Hours[:j + 1]...),
+				}
 				// NOTE(radomski): Those are not
 				if len(stop.Times.WorkMins) != 0 {
-					globalDB.Stops[i].Times.WorkMins = append(stop.Times.WorkMins[j + 1:], stop.Times.WorkMins[:j + 1]...)
+					new.WorkMins = append(stop.Times.WorkMins[j + 1:], stop.Times.WorkMins[:j + 1]...)
 				}
 				if len(stop.Times.SaturdayMins) != 0 {
-					globalDB.Stops[i].Times.SaturdayMins = append(stop.Times.SaturdayMins[j + 1:], stop.Times.SaturdayMins[:j + 1]...)
+					new.SaturdayMins = append(stop.Times.SaturdayMins[j + 1:], stop.Times.SaturdayMins[:j + 1]...)
 				}
 				if len(stop.Times.HolidayMins) != 0 {
-					globalDB.Stops[i].Times.HolidayMins = append(stop.Times.HolidayMins[j + 1:], stop.Times.HolidayMins[:j + 1]...)
+					new.HolidayMins = append(stop.Times.HolidayMins[j + 1:], stop.Times.HolidayMins[:j + 1]...)
 				}
+
+				result = append(result, Stop {
+					LineNr: stop.LineNr,
+					Direction: stop.Direction,
+					Name: stop.Name,
+					Times: new,
+				})
 			}
 		}
 	}
+
+	return 
 }
 
 func IntOrPanic(str string) (result int) {
@@ -275,9 +285,9 @@ func InfoNextBusOnConnection(stops []Stop) (result string) {
 }
 
 func Run() {
-	ReadJson()
+	database := DatabaseFromJSON()
 
-	viewable.CreatePages()
+	viewable.CreatePages(database)
 	if err := app.SetRoot(viewable.Pages, true).EnableMouse(true).Run(); err != nil {
 		panic(err)
 	}
