@@ -12,7 +12,6 @@ import (
 
 var (
 	app *tview.Application = tview.NewApplication()
-	viewable Viewable
 )
 
 type Connection struct {
@@ -287,6 +286,8 @@ func InfoNextBusOnConnection(stops []Stop) (result string) {
 func Run() {
 	database := DatabaseFromJSON()
 
+	viewable := NewViewable()
+	go viewable.UpdateUncompleteTable(database)
 	viewable.CreatePages(database)
 	if err := app.SetRoot(viewable.Pages, true).EnableMouse(true).Run(); err != nil {
 		panic(err)

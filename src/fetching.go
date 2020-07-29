@@ -76,8 +76,6 @@ func DatabaseFromJSON() (result *Database) {
 	 	time.Sleep(time.Millisecond)
 	}
 	
-	go UpdateUncompleteTable(result)
-
 	return 
 }
 
@@ -100,8 +98,6 @@ func RefreshJson(db *Database) {
 	for len(db.Stops) < 100 {
 		time.Sleep(time.Millisecond)
 	}
-	
-	go UpdateUncompleteTable(db)
 }	
 
 

@@ -29,6 +29,11 @@ type Viewable struct {
 	Search SearchViewable
 }
 
+func NewViewable() Viewable {
+	return Viewable {
+	}
+}
+
 func Center(width, height int, p tview.Primitive) tview.Primitive {
 	return tview.NewFlex().
 		AddItem(tview.NewBox(), 0, 1, false).
@@ -280,18 +285,18 @@ func (view *Viewable) RefreshTimesTable(times Times) {
 // way of handling events or a functions that just waits for something to happen and
 // then does something which seems unpractical or even slow. Let's just leave it
 // like it is, hoping it won't bite us
-func UpdateUncompleteTable(database *Database) {
+func (view *Viewable) UpdateUncompleteTable(database *Database) {
 	const updateInterval = 25 * time.Millisecond
 	for !database.Complete {
 		app.QueueUpdateDraw(func() {
-			viewable.Search.Table.SetTitle("Data is now being loaded")
+			view.Search.Table.SetTitle("Data is now being loaded")
 			searchEntires := SearchEntriesFromStops(database.Stops)
-			viewable.Search.PopulateSearchTable(searchEntires)
+			view.Search.PopulateSearchTable(searchEntires)
 		})
 		time.Sleep(updateInterval)
 	}
 
 	app.QueueUpdateDraw(func() {
-		viewable.Search.Table.SetTitle("All data is now loaded")
+		view.Search.Table.SetTitle("All data is now loaded")
 	})
 }
