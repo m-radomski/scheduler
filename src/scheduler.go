@@ -100,6 +100,7 @@ const (
 
 func TimesToOneDay(stops []Stop) (result []Stop) {
 	for _, stop := range stops {
+		toAppend := stop
 		for j := 0; j < len(stop.Times.Hours) - 1; j++ {
 			if IntOrPanic(stop.Times.Hours[j]) == 23 && IntOrPanic(stop.Times.Hours[j + 1]) == 0 {
 				new := Times {
@@ -117,14 +118,16 @@ func TimesToOneDay(stops []Stop) (result []Stop) {
 					new.HolidayMins = append(stop.Times.HolidayMins[j + 1:], stop.Times.HolidayMins[:j + 1]...)
 				}
 
-				result = append(result, Stop {
+				toAppend = Stop {
 					LineNr: stop.LineNr,
 					Direction: stop.Direction,
 					Name: stop.Name,
 					Times: new,
-				})
+				}
+				break;
 			}
 		}
+		result = append(result, toAppend)
 	}
 
 	return 
