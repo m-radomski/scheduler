@@ -119,6 +119,7 @@ func TimesToOneDay(stops []Stop) (result []Stop) {
 				}
 
 				toAppend = Stop {
+					Id: stop.Id,
 					LineNr: stop.LineNr,
 					Direction: stop.Direction,
 					Name: stop.Name,

@@ -118,14 +118,13 @@ func ConcurJSONDec(db *Database, reader io.Reader) {
 		db.Stops = append(db.Stops, s)
 	}
 
-	db.Complete = true
-	
 	_, err = dec.Token()
 	if err != nil {
 		panic(err)
 	}
-
+	
 	db.Stops = TimesToOneDay(db.Stops)
+	db.Complete = true
 }
 
 func DatabaseFromWeb(dbPath string) error {
