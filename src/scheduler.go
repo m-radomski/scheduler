@@ -15,7 +15,8 @@ var (
 )
 
 type Connection struct {
-	LineNr, Direction, InfoNext string
+	Stop *Stop
+	Path, InfoNext string
 
 	// NOTE(radomski): See comment in `FindConnections`
 	// CommuteLength, MinutesUntilNext string
@@ -72,14 +73,8 @@ func FindConnections(from, to string, stops []Stop) (ret []Connection) {
 		for j := i; j < len(stops); j++ {
 			if line == stops[j].LineNr && dir == stops[j].Direction && filter(stops[j].Name, to) {
 					connection := Connection {
-						LineNr: strconv.Itoa(stops[j].LineNr),
-						Direction: stops[i].Name + " -> " + stops[j].Name,
-						// TODO(radomski): I don't know if we really need this
-						// But it would be nice to not be so reliant on InfoNextBus
-						// returning a formated string. Idealy we would want something
-						// that just returns mins until next bus and commute lenght
-						// as ints and we would transform them somewhere down the road
-						// CommuteLength: minsLength,
+						Stop: &stops[i],
+						Path: stops[i].Name + " -> " + stops[j].Name,
 						InfoNext: InfoNextBusOnConnection(stops[i:j + 1]),
 					}
 				ret = append(ret, connection)

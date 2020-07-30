@@ -3,6 +3,7 @@ package scheduler
 import (
 	"time"
 	"strings"
+	"strconv"
 	
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
@@ -141,11 +142,11 @@ func (searchView *SearchViewable) PopulateConnectionsTable(connections []Connect
 	}
 
 	for r, connection := range connections {
-		cell := tview.NewTableCell(connection.LineNr).
+		cell := tview.NewTableCell(strconv.Itoa(connection.Stop.LineNr)).
 			SetAlign(tview.AlignCenter).SetExpansion(1)
 		searchView.Table.SetCell(r + 1, 0, cell)
 
-		cell = tview.NewTableCell(connection.Direction).
+		cell = tview.NewTableCell(connection.Path).
 			SetAlign(tview.AlignCenter).SetExpansion(1)
 		searchView.Table.SetCell(r + 1, 1, cell)
 
