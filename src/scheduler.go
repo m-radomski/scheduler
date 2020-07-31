@@ -285,10 +285,10 @@ func InfoNextBusOnConnection(stops []Stop) (result string) {
 func Run() {
 	database := DatabaseFromJSON()
 
-	viewable := NewViewable()
-	go viewable.UpdateUncompleteTable(database)
-	viewable.CreatePages(database)
-	if err := app.SetRoot(viewable.Pages, true).EnableMouse(true).Run(); err != nil {
+	ui := NewUI()
+	go ui.UpdateUncompleteTable(database)
+	ui.CreatePages(database)
+	if err := app.SetRoot(ui.Pages, true).EnableMouse(true).Run(); err != nil {
 		panic(err)
 	}
 }
