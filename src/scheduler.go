@@ -29,19 +29,21 @@ type SearchEntry struct {
 	InfoNext string
 }
 
-func SearchEntriesFromStops(stops []Stop) (result []SearchEntry) {
-	for _, stop := range stops {
-		entry := SearchEntry {
-			LineNr: strconv.Itoa(stop.LineNr),
-			Direction: stop.Direction,
-			StopName: stop.Name,
-			InfoNext: InfoNextBus(stop),
-		}
-
-		result = append(result, entry)
+func ConnectionFromStop(stop Stop) (result Connection) {
+	return Connection {
+		Stop: &stop,
+		InfoNext: InfoNextBus(stop),
 	}
 
 	return 
+}
+
+func ConnectionsFromStops(stops []Stop) (result []Connection) {
+	for _, stop := range stops {
+		result = append(result, ConnectionFromStop(stop))
+	}
+
+	return
 }
 
 func FindInStops(stops []Stop, s string) (ret []Stop) {

@@ -20,6 +20,7 @@ const (
 type UI struct {
 	Pages *tview.Pages
 	Times *tview.Table
+	TimesBanner *tview.Table
 	SearchTable *tview.Table
 	SearchConnection *tview.Form
 	SearchFuzzy *tview.Form
@@ -71,8 +72,8 @@ func (ui *UI) CreateSearchInputFlex(database *Database) (input *tview.Flex) {
 	fuzzyTerm := ""
 	showFuzzyResults := func() {
 		nstops := FindInStops(database.Stops, fuzzyTerm)
-		searchEntires := SearchEntriesFromStops(nstops)
-		ui.PopulateSearchTable(searchEntires)
+		connections := ConnectionsFromStops(nstops)
+		ui.PopulateSearchTable(connections)
 	}
 	
 	captureFuzzy := func(text string) {
@@ -101,7 +102,7 @@ func (ui *UI) CreateSearchInputFlex(database *Database) (input *tview.Flex) {
 	return
 }
 
-func (ui *UI) PopulateSearchTable(entries []SearchEntry) {
+func (ui *UI) PopulateSearchTable(connections []Connection) {
 	ui.SearchTable.Clear()
 
 	headers := "Line number;Direction;Stop name;Departure in"
@@ -110,20 +111,20 @@ func (ui *UI) PopulateSearchTable(entries []SearchEntry) {
 		ui.SearchTable.SetCell(0, c, cell)
 	}
 
-	for r, entry := range entries {
-		cell := tview.NewTableCell(entry.LineNr).
+	for r, connection := range connections {
+		cell := tview.NewTableCell(strconv.Itoa(connection.Stop.LineNr)).
 			SetAlign(tview.AlignCenter).SetExpansion(1)
 		ui.SearchTable.SetCell(r + 1, 0, cell)
 
-		cell = tview.NewTableCell(entry.Direction).
+		cell = tview.NewTableCell(connection.Stop.Direction).
 			SetAlign(tview.AlignCenter).SetExpansion(1)
 		ui.SearchTable.SetCell(r + 1, 1, cell)
 
-		cell = tview.NewTableCell(entry.StopName).
+		cell = tview.NewTableCell(connection.Stop.Name).
 			SetAlign(tview.AlignCenter).SetExpansion(1)
 		ui.SearchTable.SetCell(r + 1, 2, cell)
 
-		cell = tview.NewTableCell(entry.InfoNext).SetAlign(tview.AlignCenter)
+		cell = tview.NewTableCell(connection.InfoNext).SetAlign(tview.AlignCenter)
 		ui.SearchTable.SetCell(r + 1, 3, cell)
 	}
 }
@@ -164,13 +165,15 @@ func (view *UI) CreateSearchPage(database *Database) (title string, content tvie
 		SetTitleAlign(tview.AlignCenter)
 	view.SearchTable.SetSelectedFunc(func(row, _ int) {
 		if row != 0 {
-			view.RefreshTimesTable(database.Stops[row - 1].Times)
+			// TODO(radomski): This is broken when searching, because it doesn't use the
+			// relative rows of the stops that are currently on display
+			view.RefreshTimesInfo(ConnectionFromStop(database.Stops[row - 1]))
 			view.Pages.SwitchToPage("times")
 		}
 	})
 
-	searchEntires := SearchEntriesFromStops(database.Stops)
-	view.PopulateSearchTable(searchEntires)
+	connections := ConnectionsFromStops(database.Stops)
+	view.PopulateSearchTable(connections)
 
 	input := view.CreateSearchInputFlex(database)
 
@@ -191,7 +194,17 @@ func (ui *UI) CreateTimesPage() (title string, content tview.Primitive) {
 		ui.Pages.SwitchToPage("search")
 	})
 	
-	return "times", Center(80, 25, ui.Times)
+	ui.TimesBanner = tview.NewTable()
+
+	ui.TimesBanner.SetSeparator(tview.Borders.Vertical)
+	ui.TimesBanner.SetBorder(true).SetTitle("Bus information").SetTitleAlign(tview.AlignLeft)
+
+	flex := tview.NewFlex().
+		SetDirection(tview.FlexRow).
+		AddItem(ui.TimesBanner, 4, 0, false).
+		AddItem(ui.Times, 0, 1, true)
+	
+	return "times", Center(80, 30, flex)
 }
 
 func (ui *UI) CreatePages(database *Database) {
@@ -237,7 +250,7 @@ func (ui *UI) SearchFocusNext() {
 	}
 }
 
-func (ui *UI) RefreshTimesTable(times Times) {
+func (ui *UI) RefreshTimesInfo(connection Connection) {
 	ui.Times.Clear()
 	
 	minsOrEmpty := func(mins []string, i int) (result string) {
@@ -255,26 +268,53 @@ func (ui *UI) RefreshTimesTable(times Times) {
 		ui.Times.SetCell(0, c, cell)
 	}
 
-	for r, hour := range times.Hours {
+	for r, hour := range connection.Stop.Times.Hours {
 		cell := tview.NewTableCell(hour).SetAlign(tview.AlignRight).SetExpansion(1)
 		ui.Times.SetCell(r + 1, 0, cell)
 
-		cell = tview.NewTableCell(minsOrEmpty(times.WorkMins, r)).
+		cell = tview.NewTableCell(minsOrEmpty(connection.Stop.Times.WorkMins, r)).
 			SetAlign(tview.AlignLeft).
 			SetExpansion(1)
 		ui.Times.SetCell(r + 1, 1, cell)
 		
-		cell = tview.NewTableCell(minsOrEmpty(times.SaturdayMins, r)).
+		cell = tview.NewTableCell(minsOrEmpty(connection.Stop.Times.SaturdayMins, r)).
 			SetAlign(tview.AlignLeft).
 			SetExpansion(1)
 		ui.Times.SetCell(r + 1, 2, cell)
 		
-		cell = tview.NewTableCell(minsOrEmpty(times.HolidayMins, r)).
+		cell = tview.NewTableCell(minsOrEmpty(connection.Stop.Times.HolidayMins, r)).
 			SetAlign(tview.AlignLeft).
 			SetExpansion(1)
 		ui.Times.SetCell(r + 1, 3, cell)
 	}
 
+
+	ui.TimesBanner.Clear()
+	headers = "Line number;Direction;Stop name;Departure in"
+	for c, header := range strings.Split(headers, ";") {
+		cell := tview.NewTableCell(header).SetAlign(tview.AlignCenter).SetExpansion(1)
+		ui.TimesBanner.SetCell(0, c, cell)
+	}
+
+	cell := tview.NewTableCell(strconv.Itoa(connection.Stop.LineNr)).
+		SetAlign(tview.AlignCenter).
+		SetExpansion(1)
+	ui.TimesBanner.SetCell(1, 0, cell)
+
+	cell = tview.NewTableCell(connection.Stop.Direction).
+		SetAlign(tview.AlignCenter).
+		SetExpansion(1)
+	ui.TimesBanner.SetCell(1, 1, cell)
+	
+	cell = tview.NewTableCell(connection.Stop.Name).
+		SetAlign(tview.AlignCenter).
+		SetExpansion(1)
+	ui.TimesBanner.SetCell(1, 2, cell)
+	
+	cell = tview.NewTableCell(connection.InfoNext).
+		SetAlign(tview.AlignCenter).
+		SetExpansion(1)
+	ui.TimesBanner.SetCell(1, 3, cell)
 }
 
 func (ui *UI) UpdateUncompleteTable(database *Database) {
@@ -282,8 +322,8 @@ func (ui *UI) UpdateUncompleteTable(database *Database) {
 	for (database.Status & DatabaseComplete) == 0 {
 		app.QueueUpdateDraw(func() {
 			ui.SearchTable.SetTitle("Data is now being loaded")
-			searchEntires := SearchEntriesFromStops(database.Stops)
-			ui.PopulateSearchTable(searchEntires)
+			connections := ConnectionsFromStops(database.Stops)
+			ui.PopulateSearchTable(connections)
 		})
 		time.Sleep(updateInterval)
 	}
