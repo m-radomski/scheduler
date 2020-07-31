@@ -283,11 +283,12 @@ func InfoNextBusOnConnection(stops []Stop) (result string) {
 }
 
 func Run() {
-	database := DatabaseFromJSON()
+	database := NewDatabase()
+	database.CreateFromJSON()
 
 	ui := NewUI()
-	go ui.UpdateUncompleteTable(database)
-	ui.CreatePages(database)
+	go ui.UpdateUncompleteTable(&database)
+	ui.CreatePages(&database)
 	if err := app.SetRoot(ui.Pages, true).EnableMouse(true).Run(); err != nil {
 		panic(err)
 	}

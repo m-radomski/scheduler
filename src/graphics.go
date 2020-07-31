@@ -208,7 +208,7 @@ func (ui *UI) CreatePages(database *Database) {
 func (ui *UI) InitChangingFocus(database *Database) {
 	app.SetInputCapture(func (event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyCtrlR {
-			RefreshJson(database)
+			database.RefreshWithWeb()
 		}
 		
 		if name, _ := ui.Pages.GetFrontPage(); name != "search" {
@@ -277,14 +277,9 @@ func (ui *UI) RefreshTimesTable(times Times) {
 
 }
 
-// For corectness sake this is not good because it's the only place where we use
-// the globaly defined `UI` object. In order to replace it I would need some
-// way of handling events or a functions that just waits for something to happen and
-// then does something which seems unpractical or even slow. Let's just leave it
-// like it is, hoping it won't bite us
 func (ui *UI) UpdateUncompleteTable(database *Database) {
 	const updateInterval = 25 * time.Millisecond
-	for !database.Complete {
+	for (database.Status & DatabaseComplete) == 0 {
 		app.QueueUpdateDraw(func() {
 			ui.SearchTable.SetTitle("Data is now being loaded")
 			searchEntires := SearchEntriesFromStops(database.Stops)
