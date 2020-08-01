@@ -357,14 +357,23 @@ func (ui *UI) UpdateUncompleteTable(database *Database) {
 	const updateInterval = 25 * time.Millisecond
 	for (database.Status & DatabaseComplete) == 0 {
 		app.QueueUpdateDraw(func() {
-			ui.SearchTable.SetTitle("Data is now being loaded")
+			ui.SearchTable.SetTitle("Data is now being loaded").SetTitleAlign(tview.AlignLeft)
 			connections := ConnectionsFromStops(database.Stops)
 			ui.PopulateSearchTable(connections)
 		})
 		time.Sleep(updateInterval)
 	}
 
+	loadedHeader := "All data is now loaded"
+	for i := 0; i < 4; i++ {
+		app.QueueUpdateDraw(func() {
+			ui.SearchTable.SetTitle(loadedHeader).SetTitleAlign(tview.AlignLeft)
+		})
+		loadedHeader += "."
+		time.Sleep(updateInterval * 10)
+	}
+
 	app.QueueUpdateDraw(func() {
-		ui.SearchTable.SetTitle("All data is now loaded")
+		ui.SearchTable.SetTitle("Stops and their data").SetTitleAlign(tview.AlignCenter)
 	})
 }
