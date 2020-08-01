@@ -192,6 +192,8 @@ func ClosestsBusTimeIndexes(currentHour, currentMin int, workingMins, workingHou
 				return hi, i
 			}
 		}
+
+		currentMin = 0
 	}
 
 	// We found the hour in this schedule but we don't fit with the minutes this time
