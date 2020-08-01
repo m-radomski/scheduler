@@ -7,7 +7,7 @@ For people that know what they are going, all you need is to have `go` installed
 From there you can type the following command:
 
 ```
-go get -u https://github.com/m-radomski/scheduler
+go get -u github.com/m-radomski/scheduler
 ```
 
 This downloads and installs the program into your `GOPATH`, from there just run the command `scheduler`. 
