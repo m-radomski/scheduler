@@ -28,6 +28,8 @@ type UI struct {
 	SearchConnection *tview.Form
 	SearchFuzzy *tview.Form
 	CurrentFocus SearchFocused
+
+	ConnectionsDisplayed []Connection
 }
 
 func NewUI() UI {
@@ -107,6 +109,7 @@ func (ui *UI) CreateSearchInputFlex(database *Database) (input *tview.Flex) {
 
 func (ui *UI) PopulateSearchTable(connections []Connection) {
 	ui.SearchTable.Clear()
+	ui.ConnectionsDisplayed = connections
 
 	headers := "Line number;Direction;Stop name;Departure in"
 	for c, header := range strings.Split(headers, ";") {
@@ -134,6 +137,7 @@ func (ui *UI) PopulateSearchTable(connections []Connection) {
 
 func (ui *UI) PopulateConnectionsTable(connections []Connection) {
 	ui.SearchTable.Clear()
+	ui.ConnectionsDisplayed = connections
 
 	headers := "Line number;Direction;Departure in"
 	for c, header := range strings.Split(headers, ";") {
@@ -156,34 +160,34 @@ func (ui *UI) PopulateConnectionsTable(connections []Connection) {
 	}	
 }
 
-func (view *UI) CreateSearchPage(database *Database) (title string, content tview.Primitive) {
-	view.SearchTable = tview.NewTable()
+func (ui *UI) CreateSearchPage(database *Database) (title string, content tview.Primitive) {
+	ui.SearchTable = tview.NewTable()
 
-	view.SearchTable.SetFixed(1, 1).
+	ui.SearchTable.SetFixed(1, 1).
 		SetSelectable(true, false).
 		SetSeparator(tview.Borders.Vertical)
 
-	view.SearchTable.SetBorder(true).
+	ui.SearchTable.SetBorder(true).
 		SetTitle("Stops and their data").
 		SetTitleAlign(tview.AlignCenter)
-	view.SearchTable.SetSelectedFunc(func(row, _ int) {
+	ui.SearchTable.SetSelectedFunc(func(row, _ int) {
 		if row != 0 {
 			// TODO(radomski): This is broken when searching, because it doesn't use the
 			// relative rows of the stops that are currently on display
-			view.RefreshTimesInfo(ConnectionFromStop(database.Stops[row - 1]))
-			view.Pages.SwitchToPage("times")
+			ui.RefreshTimesInfo(ui.ConnectionsDisplayed[row - 1])
+			ui.Pages.SwitchToPage("times")
 		}
 	})
 
 	connections := ConnectionsFromStops(database.Stops)
-	view.PopulateSearchTable(connections)
+	ui.PopulateSearchTable(connections)
 
-	input := view.CreateSearchInputFlex(database)
+	input := ui.CreateSearchInputFlex(database)
 
 	return "search", tview.NewFlex().
 		AddItem(tview.NewFlex().
 			SetDirection(tview.FlexRow).
-			AddItem(view.SearchTable, 0, 1, false).
+			AddItem(ui.SearchTable, 0, 1, false).
 			AddItem(input, 9, 0, true),
 		0, 1, true)
 }
