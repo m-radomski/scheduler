@@ -223,7 +223,7 @@ func MinsToNextBus(stop Stop) (result int) {
 func CommuteLengthFromRoute(stops []Stop) (result int) {
 	now := time.Now()
 	nowHour, nowMin, _ := now.Clock()
-	lookupMins := TodaysMins(now, stops[0].Times) // NOTE(radomski): I shouldn't be doing this is a loop
+	lookupMins := TodaysMins(now, stops[0].Times)
 	hi, mi := ClosestsBusTimeIndexes(nowHour, nowMin, lookupMins, stops[0].Times.Hours)
 		
 	nowHour = IntOrPanic(stops[0].Times.Hours[hi])
@@ -231,10 +231,11 @@ func CommuteLengthFromRoute(stops []Stop) (result int) {
 	nowMin = IntOrPanic(strings.TrimFunc(tmp, func (r rune) bool {
 		return unicode.IsLetter(r)
 	}))
-	
+
 	for _, stop := range stops[1:] {
+		lookupMins := TodaysMins(now, stop.Times)
+		hi, mi = ClosestsBusTimeIndexes(nowHour, nowMin, lookupMins, stop.Times.Hours)
 		if hi <= BeyondSchedule {
-			// panic("Unreachable")
 			return result
 		}
 		
@@ -250,7 +251,7 @@ func CommuteLengthFromRoute(stops []Stop) (result int) {
 		nowMin = resultMin
 	}
 	
-	return 0
+	return result
 }
 
 func InfoNextBus(stop Stop) (result string) {
