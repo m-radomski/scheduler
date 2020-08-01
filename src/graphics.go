@@ -91,7 +91,13 @@ func (ui *UI) CreateSearchInputFlex(database *Database) (input *tview.Flex) {
 	
 	captureFuzzy := func(text string) {
 		fuzzyTerm = text
-		showFuzzyResults()
+		if len(fuzzyTerm) != 0 {
+			showFuzzyResults()
+		} else {
+			connections := ConnectionsFromStops(database.Stops)
+			ui.PopulateSearchTable(connections)
+			ui.SearchTable.ScrollToBeginning()
+		}
 	}
 
 	ui.SearchConnection.
