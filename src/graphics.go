@@ -19,8 +19,11 @@ const (
 
 type UI struct {
 	Pages *tview.Pages
+	
 	Times *tview.Table
 	TimesBanner *tview.Table
+	TimesConnectionId int
+	
 	SearchTable *tview.Table
 	SearchConnection *tview.Form
 	SearchFuzzy *tview.Form
@@ -215,20 +218,42 @@ func (ui *UI) CreatePages(database *Database) {
 	
 	name, primi = ui.CreateSearchPage(database)
 	ui.Pages.AddPage(name, primi, true, true)
-	ui.InitChangingFocus(database)
+	ui.SetKeybindings(database)
 }
 
-func (ui *UI) InitChangingFocus(database *Database) {
+func (ui *UI) SetKeybindings(database *Database) {
 	app.SetInputCapture(func (event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyCtrlR {
 			database.RefreshWithWeb()
-		}
-		
-		if name, _ := ui.Pages.GetFrontPage(); name != "search" {
 			return event
 		}
 
-		if event.Key() == tcell.KeyCtrlSpace {
+		name, _ := ui.Pages.GetFrontPage();
+		if name == "times" && event.Key() == tcell.KeyCtrlN {
+			nextId := ui.TimesConnectionId + 1
+
+			// Early out
+			if nextId > len(database.Stops) {
+				return event
+			}
+
+			connection := ConnectionFromStop(database.Stops[nextId])
+			ui.RefreshTimesInfo(connection)
+		}
+		
+		if name == "times" && event.Key() == tcell.KeyCtrlP {
+			nextId := ui.TimesConnectionId - 1
+
+			// Early out
+			if nextId < 0 {
+				return event
+			}
+			
+			connection := ConnectionFromStop(database.Stops[nextId])
+			ui.RefreshTimesInfo(connection)
+		}
+		
+		if name == "search" && event.Key() == tcell.KeyCtrlSpace {
 			ui.SearchFocusNext()
 		}
 
@@ -252,6 +277,7 @@ func (ui *UI) SearchFocusNext() {
 
 func (ui *UI) RefreshTimesInfo(connection Connection) {
 	ui.Times.Clear()
+	ui.TimesConnectionId = connection.Stop.Id;
 	
 	minsOrEmpty := func(mins []string, i int) (result string) {
 		result = ""
