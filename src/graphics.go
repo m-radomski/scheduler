@@ -64,6 +64,10 @@ func (ui *UI) CreateSearchInputFlex(database *Database) (input *tview.Flex) {
 		from = text
 		if len(to) != 0 {
 			showConnectionResults(from, to)
+		} else if len(from) == 0 {
+			connections := ConnectionsFromStops(database.Stops)
+			ui.PopulateSearchTable(connections)
+			ui.SearchTable.ScrollToBeginning()
 		}
 	}
 
@@ -71,6 +75,10 @@ func (ui *UI) CreateSearchInputFlex(database *Database) (input *tview.Flex) {
 		to = text
 		if len(from) != 0 {
 			showConnectionResults(from, to)
+		} else if len(to) == 0 {
+			connections := ConnectionsFromStops(database.Stops)
+			ui.PopulateSearchTable(connections)
+			ui.SearchTable.ScrollToBeginning()
 		}
 	}
 
@@ -230,6 +238,7 @@ func (ui *UI) SetKeybindings(database *Database) {
 		switch event.Key() {
 		case tcell.KeyCtrlR:
 			database.RefreshWithWeb()
+			ui.UpdateUncompleteTable(database)
 			return event
 		case tcell.KeyCtrlN:
 			if name, _ := ui.Pages.GetFrontPage(); name != "times" {
