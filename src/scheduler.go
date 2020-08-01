@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"sort"
 
 	"github.com/rivo/tview"
 )
@@ -96,6 +97,46 @@ func FindConnections(from, to string, stops []Stop) (ret []Connection) {
 	}
 
 	return
+}
+
+func SortConnectionsOnTime(connections []Connection) (result []Connection) {
+	valueOnInfo := func(connection Connection) int {
+		const INT32_MAX int = (1 << 31) - 1
+		if strings.HasPrefix(connection.InfoNext, "Depart") {
+			return 0
+		} else if strings.HasPrefix(connection.InfoNext, "In") {
+			mins := strings.TrimFunc(connection.InfoNext, func (r rune) bool {
+				return unicode.IsLetter(r) || unicode.IsSpace(r)
+			})
+			
+			nondigit := strings.IndexFunc(mins, func(r rune) bool {
+				return !unicode.IsDigit(r)
+			})
+
+			if nondigit != -1 {
+				mins = mins[:nondigit]
+			}
+
+			minsInt, err := strconv.Atoi(mins)
+			if err != nil {
+				panic(err)
+			}
+
+			return minsInt
+		} else if strings.HasPrefix(connection.InfoNext, "Beyond") {
+			return INT32_MAX - 1
+		} else if strings.HasPrefix(connection.InfoNext, "Doesn") {
+			return INT32_MAX
+		} else {
+			panic("Unreachable")
+		}
+	}
+	
+	sort.Slice(connections, func(i, j int) bool {
+		return valueOnInfo(connections[i]) < valueOnInfo(connections[j])
+	})
+
+	return connections
 }
 
 const (

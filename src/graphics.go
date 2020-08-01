@@ -55,7 +55,8 @@ func (ui *UI) CreateSearchInputFlex(database *Database) (input *tview.Flex) {
 	
 	showConnectionResults := func(from, to string) {
 		nstops := FindConnections(from, to, database.Stops)
-		ui.PopulateConnectionsTable(nstops)
+		sorted := SortConnectionsOnTime(nstops)
+		ui.PopulateConnectionsTable(sorted)
 	}
 
 	from := ""
