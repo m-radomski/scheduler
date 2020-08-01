@@ -227,13 +227,15 @@ func (ui *UI) CreatePages(database *Database) {
 
 func (ui *UI) SetKeybindings(database *Database) {
 	app.SetInputCapture(func (event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyCtrlR {
+		switch event.Key() {
+		case tcell.KeyCtrlR:
 			database.RefreshWithWeb()
 			return event
-		}
+		case tcell.KeyCtrlN:
+			if name, _ := ui.Pages.GetFrontPage(); name != "times" {
+				return event
+			}
 
-		name, _ := ui.Pages.GetFrontPage();
-		if name == "times" && event.Key() == tcell.KeyCtrlN {
 			nextId := ui.TimesConnectionId + 1
 
 			// Early out
@@ -243,9 +245,11 @@ func (ui *UI) SetKeybindings(database *Database) {
 
 			connection := ConnectionFromStop(database.Stops[nextId])
 			ui.RefreshTimesInfo(connection)
-		}
-		
-		if name == "times" && event.Key() == tcell.KeyCtrlP {
+		case tcell.KeyCtrlP:
+			if name, _ := ui.Pages.GetFrontPage(); name != "times" {
+				return event
+			}
+
 			nextId := ui.TimesConnectionId - 1
 
 			// Early out
@@ -255,9 +259,11 @@ func (ui *UI) SetKeybindings(database *Database) {
 			
 			connection := ConnectionFromStop(database.Stops[nextId])
 			ui.RefreshTimesInfo(connection)
-		}
-		
-		if name == "search" && event.Key() == tcell.KeyCtrlSpace {
+		case tcell.KeyCtrlSpace:
+			if name, _ := ui.Pages.GetFrontPage(); name != "search" {
+				return event;
+			}
+
 			ui.SearchFocusNext()
 		}
 
