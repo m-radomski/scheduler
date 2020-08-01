@@ -47,8 +47,16 @@ func ConnectionsFromStops(stops []Stop) (result []Connection) {
 }
 
 func FindInStops(stops []Stop, s string) (ret []Stop) {
+	filter := func(main, substr string) bool {
+		// Both of this calls are case insensitive, I don't really know if
+		// someone would ever want it to be case sensitive.
+		const treshold float64 = 0.9
+		return IsFuzzyEqualInsens(main, substr, treshold) ||
+			strings.HasPrefix(strings.ToLower(main), strings.ToLower(substr))
+	}
+	
 	for _, stop := range stops {
-		if strings.Contains(stop.Name, s) || strings.Contains(strconv.Itoa(stop.LineNr), s) {
+		if filter(stop.Name, s) || filter(strconv.Itoa(stop.LineNr), s) {
 			ret = append(ret, stop)
 		}
 	}
