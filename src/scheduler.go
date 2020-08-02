@@ -91,9 +91,24 @@ func FindConnections(from, to string, stops []Stop) (ret []Connection) {
 		return IsFuzzyEqualInsens(main, substr, treshold) ||
 			strings.HasPrefix(strings.ToLower(main), strings.ToLower(substr))
 	}
+
+	mapFindOrInsert := func(main, substr string, m *map[string]bool) bool {
+		passed, present := (*m)[main]
+		if !present {
+			matches := filter(main, substr)
+			(*m)[main] = matches
+
+			return matches
+		}
+		
+		return passed
+	}
+
+	fromPassed := make(map[string]bool)
+	toPassed := make(map[string]bool)
 	
 	for i := 0; i < len(stops); i++ {
-		if !filter(stops[i].Name, from) {
+		if !mapFindOrInsert(stops[i].Name, from, &fromPassed) {
 			continue
 		}
 
@@ -101,7 +116,9 @@ func FindConnections(from, to string, stops []Stop) (ret []Connection) {
 		dir := stops[i].Direction
 
 		for j := i; j < len(stops); j++ {
-			if line == stops[j].LineNr && dir == stops[j].Direction && filter(stops[j].Name, to) {
+			if line == stops[j].LineNr &&
+				dir == stops[j].Direction &&
+				mapFindOrInsert(stops[j].Name, to, &toPassed) {
 					connection := Connection {
 						Stop: &stops[i],
 						Path: stops[i].Name + " -> " + stops[j].Name,
