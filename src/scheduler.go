@@ -57,7 +57,12 @@ func FindInStops(stops []Stop, s string) (ret []Stop) {
 	}
 	
 	for _, stop := range stops {
-		if filter(stop.Name, s) || filter(strconv.Itoa(stop.LineNr), s) {
+		result := strings.IndexFunc(s, func(r rune) bool {
+			return !unicode.IsDigit(r)
+		})
+		if result == -1 && strings.HasPrefix(strconv.Itoa(stop.LineNr), s) {
+			ret = append(ret, stop)
+		} else if filter(stop.Name, s) {
 			ret = append(ret, stop)
 		}
 	}
