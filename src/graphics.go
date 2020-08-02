@@ -69,6 +69,10 @@ func (ui *UI) CreateSearchInputFlex(database *Database) (input *tview.Flex) {
 			connections := ConnectionsFromStops(database.Stops)
 			ui.PopulateSearchTable(connections)
 			ui.SearchTable.ScrollToBeginning()
+		} else if len(from) != 0 {
+			connections := FindConnectionsOnlyFrom(from, database.Stops)
+			sorted := SortConnectionsOnTime(connections)
+			ui.PopulateConnectionsTable(sorted)
 		}
 	}
 
@@ -80,6 +84,10 @@ func (ui *UI) CreateSearchInputFlex(database *Database) (input *tview.Flex) {
 			connections := ConnectionsFromStops(database.Stops)
 			ui.PopulateSearchTable(connections)
 			ui.SearchTable.ScrollToBeginning()
+		} else if len(to) != 0 {
+			connections := FindConnectionsOnlyTo(to, database.Stops)
+			sorted := SortConnectionsOnTime(connections)
+			ui.PopulateConnectionsTable(sorted)
 		}
 	}
 

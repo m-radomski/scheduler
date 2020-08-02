@@ -97,18 +97,73 @@ func FindConnections(from, to string, stops []Stop) (ret []Connection) {
 		dir := stops[i].Direction
 
 		for j := i; j < len(stops); j++ {
-			if line == stops[j].LineNr &&
-				dir == stops[j].Direction &&
-				InputMapFindOrInsert(stops[j].Name, to, &toPassed) {
-					connection := Connection {
+			if line != stops[j].LineNr || dir != stops[j].Direction {
+				i += j - 1 - i // skip this many stops, because the are on the same route
+				break
+			} else if InputMapFindOrInsert(stops[j].Name, to, &toPassed) {
+				connection := Connection {
 						Stop: &stops[i],
 						Path: stops[i].Name + " -> " + stops[j].Name,
 						InfoNext: InfoNextBusOnConnection(stops[i:j + 1]),
 					}
 				ret = append(ret, connection)
-			} else if line != stops[j].LineNr || dir != stops[j].Direction {
+			}
+		}
+	}
+
+	return
+}
+
+func FindConnectionsOnlyFrom(from string, stops []Stop) (ret []Connection) {
+	fromPassed := make(map[string]bool)
+
+	stopsLength := len(stops)
+	for i := 0; i < stopsLength; i++ {
+		if !InputMapFindOrInsert(stops[i].Name, from, &fromPassed) {
+			continue
+		}
+
+		line := stops[i].LineNr
+		dir := stops[i].Direction
+
+		j := i
+		for (j + 1) < stopsLength &&
+			line == stops[j + 1].LineNr &&
+			dir == stops[j + 1].Direction {
+			j++
+		}
+
+		connection := Connection {
+			Stop: &stops[i],
+			Path: stops[i].Name + " -> " + stops[j].Name,
+			InfoNext: InfoNextBusOnConnection(stops[i:j + 1]),
+		}
+
+		ret = append(ret, connection)
+	}
+	
+	return 
+}
+
+func FindConnectionsOnlyTo(to string, stops []Stop) (ret []Connection) {
+	toPassed := make(map[string]bool)
+
+	stopsLength := len(stops)
+	for i := 0; i < stopsLength; i++ {
+		line := stops[i].LineNr
+		dir := stops[i].Direction
+
+		for j := i; j < stopsLength; j++ {
+			if line != stops[j].LineNr || dir != stops[j].Direction {
 				i += j - 1 - i // skip this many stops, because the are on the same route
 				break
+			} else if InputMapFindOrInsert(stops[j].Name, to, &toPassed) {
+				connection := Connection {
+					Stop: &stops[i],
+					Path: stops[i].Name + " -> " + stops[j].Name,
+					InfoNext: InfoNextBusOnConnection(stops[i:j + 1]),
+				}
+				ret = append(ret, connection)
 			}
 		}
 	}
