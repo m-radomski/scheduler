@@ -55,15 +55,29 @@ func FindInStops(stops []Stop, s string) (ret []Stop) {
 		return IsFuzzyEqualInsens(main, substr, treshold) ||
 			strings.HasPrefix(strings.ToLower(main), strings.ToLower(substr))
 	}
+
+	namePassed := make(map[string]bool)
 	
 	for _, stop := range stops {
-		result := strings.IndexFunc(s, func(r rune) bool {
+		nondigit := strings.IndexFunc(s, func(r rune) bool {
 			return !unicode.IsDigit(r)
 		})
-		if result == -1 && strings.HasPrefix(strconv.Itoa(stop.LineNr), s) {
+		
+		if nondigit == -1 && strings.HasPrefix(strconv.Itoa(stop.LineNr), s) {
 			ret = append(ret, stop)
-		} else if filter(stop.Name, s) {
-			ret = append(ret, stop)
+		} else {
+			passed, present := namePassed[stop.Name]
+			
+			if present && passed {
+				ret = append(ret, stop)
+			} else if !present {
+				matches := filter(stop.Name, s)
+				namePassed[stop.Name] = matches
+
+				if matches {
+					ret = append(ret, stop)
+				}
+			}
 		}
 	}
 	return
