@@ -34,6 +34,8 @@ type Stop struct {
 type DatabaseStatus int
 const (
 	DatabaseNotReady DatabaseStatus = 1 << iota
+	DatabaseDownloading
+	DatabaseDecoding
 	DatabaseComplete
 )
 
@@ -64,6 +66,7 @@ func (db *Database) CreateFromJSON() {
 	
 	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
 		fmt.Println("Missing database file, fetching it from the web")
+		db.Status = DatabaseDownloading
 		err := NewDatabaseFileFromWeb(dbPath)
 		if err != nil {
 			panic(err)
@@ -87,7 +90,7 @@ func (db *Database) CreateFromJSON() {
 func (db *Database) RefreshWithWeb() {
 	dbPath := CreateDatabasePath()
 	
-	*db = NewDatabase()
+	db.Status = DatabaseDownloading
 	err := NewDatabaseFileFromWeb(dbPath)
 	if err != nil {
 		panic(err)
@@ -107,6 +110,8 @@ func (db *Database) RefreshWithWeb() {
 
 
 func (db *Database) ConcurJSONDec(reader io.Reader) {
+	db.Status = DatabaseDecoding
+	
 	dec := json.NewDecoder(reader)
 	_, err := dec.Token()
 	if err != nil {

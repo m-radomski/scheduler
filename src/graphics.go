@@ -244,8 +244,9 @@ func (ui *UI) SetKeybindings(database *Database) {
 	app.SetInputCapture(func (event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyCtrlR:
+			*database = NewDatabase()
+			go ui.UpdateUncompleteTable(database)
 			database.RefreshWithWeb()
-			ui.UpdateUncompleteTable(database)
 			return event
 		case tcell.KeyCtrlN:
 			if name, _ := ui.Pages.GetFrontPage(); name != "times" {
@@ -372,8 +373,20 @@ func (ui *UI) RefreshTimesInfo(connection Connection) {
 func (ui *UI) UpdateUncompleteTable(database *Database) {
 	const updateInterval = 25 * time.Millisecond
 	for (database.Status & DatabaseComplete) == 0 {
+		info := ""
+		switch database.Status {
+		case DatabaseNotReady:
+			info = "Database is not yet created"
+		case DatabaseDownloading:
+			info = "Data is now being downloaded from the web"
+		case DatabaseDecoding:
+			info = "Data is now being loaded"
+		case DatabaseComplete:
+			break;
+		}
+		
 		app.QueueUpdateDraw(func() {
-			ui.SearchTable.SetTitle("Data is now being loaded").SetTitleAlign(tview.AlignLeft)
+			ui.SearchTable.SetTitle(info).SetTitleAlign(tview.AlignLeft)
 			connections := ConnectionsFromStops(database.Stops)
 			ui.PopulateSearchTable(connections)
 		})
