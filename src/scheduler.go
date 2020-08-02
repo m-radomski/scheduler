@@ -47,15 +47,27 @@ func ConnectionsFromStops(stops []Stop) (result []Connection) {
 	return
 }
 
-func FindInStops(stops []Stop, s string) (ret []Stop) {
-	filter := func(main, substr string) bool {
-		// Both of this calls are case insensitive, I don't really know if
-		// someone would ever want it to be case sensitive.
-		const treshold float64 = 0.9
-		return IsFuzzyEqualInsens(main, substr, treshold) ||
-			strings.HasPrefix(strings.ToLower(main), strings.ToLower(substr))
-	}
+func InputFilter(main, s string) bool {
+	// Both of this calls are case insensitive, I don't really know if
+	// someone would ever want it to be case sensitive.
+	const treshold float64 = 0.9
+	return IsFuzzyEqualInsens(main, s, treshold) ||
+		strings.HasPrefix(strings.ToLower(main), strings.ToLower(s))
+}
 
+func InputMapFindOrInsert(main, s string,  m *map[string]bool) bool {
+	passed, present := (*m)[main]
+	if !present {
+		matches := InputFilter(main, s)
+		(*m)[main] = matches
+
+		return matches
+	}
+	
+	return passed
+}
+
+func FindInStops(stops []Stop, s string) (ret []Stop) {
 	namePassed := make(map[string]bool)
 	
 	for _, stop := range stops {
@@ -65,50 +77,19 @@ func FindInStops(stops []Stop, s string) (ret []Stop) {
 		
 		if nondigit == -1 && strings.HasPrefix(strconv.Itoa(stop.LineNr), s) {
 			ret = append(ret, stop)
-		} else {
-			passed, present := namePassed[stop.Name]
-			
-			if present && passed {
+		} else if InputMapFindOrInsert(stop.Name, s, &namePassed) {
 				ret = append(ret, stop)
-			} else if !present {
-				matches := filter(stop.Name, s)
-				namePassed[stop.Name] = matches
-
-				if matches {
-					ret = append(ret, stop)
-				}
-			}
 		}
 	}
 	return
 }
 
 func FindConnections(from, to string, stops []Stop) (ret []Connection) {
-	filter := func(main, substr string) bool {
-		// Both of this calls are case insensitive, I don't really know if
-		// someone would ever want it to be case sensitive.
-		const treshold float64 = 0.9
-		return IsFuzzyEqualInsens(main, substr, treshold) ||
-			strings.HasPrefix(strings.ToLower(main), strings.ToLower(substr))
-	}
-
-	mapFindOrInsert := func(main, substr string, m *map[string]bool) bool {
-		passed, present := (*m)[main]
-		if !present {
-			matches := filter(main, substr)
-			(*m)[main] = matches
-
-			return matches
-		}
-		
-		return passed
-	}
-
 	fromPassed := make(map[string]bool)
 	toPassed := make(map[string]bool)
 	
 	for i := 0; i < len(stops); i++ {
-		if !mapFindOrInsert(stops[i].Name, from, &fromPassed) {
+		if !InputMapFindOrInsert(stops[i].Name, from, &fromPassed) {
 			continue
 		}
 
@@ -118,7 +99,7 @@ func FindConnections(from, to string, stops []Stop) (ret []Connection) {
 		for j := i; j < len(stops); j++ {
 			if line == stops[j].LineNr &&
 				dir == stops[j].Direction &&
-				mapFindOrInsert(stops[j].Name, to, &toPassed) {
+				InputMapFindOrInsert(stops[j].Name, to, &toPassed) {
 					connection := Connection {
 						Stop: &stops[i],
 						Path: stops[i].Name + " -> " + stops[j].Name,
