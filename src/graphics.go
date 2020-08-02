@@ -290,6 +290,30 @@ func (ui *UI) SetKeybindings(database *Database) {
 			}
 
 			ui.SearchFocusNext()
+		case tcell.KeyBackspace:
+			name, _ := ui.Pages.GetFrontPage();
+			// NOTE(radomski): This tcell lib is weird, backspace for me is registered
+			// only when also pressing Ctrl what that is not represented in the result
+			// from the Modifiers() method call. I presume that it's only registered when
+			// pressing Ctrl, might be wrong tho
+			if (name == "search") /* && (event.Modifiers() & tcell.ModCtrl != 0) */ {
+				switch ui.CurrentFocus {
+				case FuzzyFocused:
+					id, _ := ui.SearchFuzzy.GetFocusedItemIndex()
+					item := ui.SearchFuzzy.GetFormItem(id)
+
+					input := item.(*tview.InputField)
+					input.SetText("")
+				case ConnectionFocused:
+					id, _ := ui.SearchConnection.GetFocusedItemIndex()
+					item := ui.SearchConnection.GetFormItem(id)
+
+					input := item.(*tview.InputField)
+					input.SetText("")
+				default:
+					return event
+				}
+			}
 		}
 
 		return event
