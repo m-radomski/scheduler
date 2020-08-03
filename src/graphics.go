@@ -54,41 +54,35 @@ func (ui *UI) CreateSearchInputFlex(database *Database) (input *tview.Flex) {
 	input = tview.NewFlex()
 	
 	showConnectionResults := func(from, to string) {
-		nstops := FindConnections(from, to, database.Stops)
-		sorted := SortConnectionsOnTime(nstops)
-		ui.PopulateConnectionsTable(sorted)
+		if len(to) == 0 && len(from) == 0 {
+			connections := ConnectionsFromStops(database.Stops)
+			ui.PopulateSearchTable(connections)
+			ui.SearchTable.ScrollToBeginning()
+		} else {
+			var connections []Connection
+			if len(to) != 0 && len(from) != 0 {
+				connections = FindConnections(from, to, database.Stops)			
+			} else if len(to) == 0 && len(from) != 0 {
+				connections = FindConnectionsOnlyFrom(from, database.Stops)
+			} else if len(to) != 0 && len(from) == 0 {
+				connections = FindConnectionsOnlyTo(to, database.Stops)
+			}
+
+			sorted := SortConnectionsOnTime(connections)
+			ui.PopulateConnectionsTable(sorted)
+		}
 	}
 
 	from := ""
 	to := ""
 	captureFrom := func(text string) {
 		from = text
-		if len(to) != 0 {
-			showConnectionResults(from, to)
-		} else if len(from) == 0 {
-			connections := ConnectionsFromStops(database.Stops)
-			ui.PopulateSearchTable(connections)
-			ui.SearchTable.ScrollToBeginning()
-		} else if len(from) != 0 {
-			connections := FindConnectionsOnlyFrom(from, database.Stops)
-			sorted := SortConnectionsOnTime(connections)
-			ui.PopulateConnectionsTable(sorted)
-		}
+		showConnectionResults(from, to)
 	}
 
 	captureTo := func(text string) {
 		to = text
-		if len(from) != 0 {
-			showConnectionResults(from, to)
-		} else if len(to) == 0 {
-			connections := ConnectionsFromStops(database.Stops)
-			ui.PopulateSearchTable(connections)
-			ui.SearchTable.ScrollToBeginning()
-		} else if len(to) != 0 {
-			connections := FindConnectionsOnlyTo(to, database.Stops)
-			sorted := SortConnectionsOnTime(connections)
-			ui.PopulateConnectionsTable(sorted)
-		}
+		showConnectionResults(from, to)
 	}
 
 	fuzzyTerm := ""
